@@ -15,6 +15,14 @@ from . import _exceptions
 from ._qs import Querystring
 
 if TYPE_CHECKING:
+    from .resources.files import (
+        Files,
+        AsyncFiles,
+        FilesWithRawResponse,
+        AsyncFilesWithRawResponse,
+        FilesWithStreamingResponse,
+        AsyncFilesWithStreamingResponse,
+    )
     from .resources.agents import (
         Agents,
         AsyncAgents,
@@ -22,6 +30,62 @@ if TYPE_CHECKING:
         AsyncAgentsWithRawResponse,
         AgentsWithStreamingResponse,
         AsyncAgentsWithStreamingResponse,
+    )
+    from .resources.skills import (
+        Skills,
+        AsyncSkills,
+        SkillsWithRawResponse,
+        AsyncSkillsWithRawResponse,
+        SkillsWithStreamingResponse,
+        AsyncSkillsWithStreamingResponse,
+    )
+    from .resources.vaults import (
+        Vaults,
+        AsyncVaults,
+        VaultsWithRawResponse,
+        AsyncVaultsWithRawResponse,
+        VaultsWithStreamingResponse,
+        AsyncVaultsWithStreamingResponse,
+    )
+    from .resources.sessions import (
+        Sessions,
+        AsyncSessions,
+        SessionsWithRawResponse,
+        AsyncSessionsWithRawResponse,
+        SessionsWithStreamingResponse,
+        AsyncSessionsWithStreamingResponse,
+    )
+    from .resources.triggers import (
+        Triggers,
+        AsyncTriggers,
+        TriggersWithRawResponse,
+        AsyncTriggersWithRawResponse,
+        TriggersWithStreamingResponse,
+        AsyncTriggersWithStreamingResponse,
+    )
+    from .resources.discovery import (
+        Discovery,
+        AsyncDiscovery,
+        DiscoveryWithRawResponse,
+        AsyncDiscoveryWithRawResponse,
+        DiscoveryWithStreamingResponse,
+        AsyncDiscoveryWithStreamingResponse,
+    )
+    from .resources.environments import (
+        Environments,
+        AsyncEnvironments,
+        EnvironmentsWithRawResponse,
+        AsyncEnvironmentsWithRawResponse,
+        EnvironmentsWithStreamingResponse,
+        AsyncEnvironmentsWithStreamingResponse,
+    )
+    from .resources.memory_stores import (
+        MemoryStores,
+        AsyncMemoryStores,
+        MemoryStoresWithRawResponse,
+        AsyncMemoryStoresWithRawResponse,
+        MemoryStoresWithStreamingResponse,
+        AsyncMemoryStoresWithStreamingResponse,
     )
 from ._types import Omit, Timeout, NotGiven, RequestOptions, not_given
 from ._utils import is_given
@@ -163,6 +227,54 @@ class Orca(SyncAPIClient):
         return Agents(self)
 
     @cached_property
+    def sessions(self) -> Sessions:
+        from .resources.sessions import Sessions
+
+        return Sessions(self)
+
+    @cached_property
+    def environments(self) -> Environments:
+        from .resources.environments import Environments
+
+        return Environments(self)
+
+    @cached_property
+    def files(self) -> Files:
+        from .resources.files import Files
+
+        return Files(self)
+
+    @cached_property
+    def skills(self) -> Skills:
+        from .resources.skills import Skills
+
+        return Skills(self)
+
+    @cached_property
+    def vaults(self) -> Vaults:
+        from .resources.vaults import Vaults
+
+        return Vaults(self)
+
+    @cached_property
+    def memory_stores(self) -> MemoryStores:
+        from .resources.memory_stores import MemoryStores
+
+        return MemoryStores(self)
+
+    @cached_property
+    def triggers(self) -> Triggers:
+        from .resources.triggers import Triggers
+
+        return Triggers(self)
+
+    @cached_property
+    def discovery(self) -> Discovery:
+        from .resources.discovery import Discovery
+
+        return Discovery(self)
+
+    @cached_property
     def with_raw_response(self) -> OrcaWithRawResponse:
         return OrcaWithRawResponse(self)
 
@@ -241,6 +353,16 @@ class Orca(SyncAPIClient):
     # Alias for `copy` for nicer inline usage, e.g.
     # client.with_options(timeout=10).agents.list(...)
     with_options = copy
+
+    def session(self, session_id: str) -> SessionHandle:
+        """A handle whose sub-resources carry `session_id` for you.
+
+        Equivalent to calling `client.sessions.*` with the id repeated on every call;
+        it holds no state and performs no I/O when constructed.
+        """
+        from .lib.session import SessionHandle
+
+        return SessionHandle(self, session_id)
 
     def _ensure_extension_available(self, group: str) -> None:
         """Raise unless this deployment advertises `group` via `GET /apis`.
@@ -335,6 +457,54 @@ class AsyncOrca(AsyncAPIClient):
         return AsyncAgents(self)
 
     @cached_property
+    def sessions(self) -> AsyncSessions:
+        from .resources.sessions import AsyncSessions
+
+        return AsyncSessions(self)
+
+    @cached_property
+    def environments(self) -> AsyncEnvironments:
+        from .resources.environments import AsyncEnvironments
+
+        return AsyncEnvironments(self)
+
+    @cached_property
+    def files(self) -> AsyncFiles:
+        from .resources.files import AsyncFiles
+
+        return AsyncFiles(self)
+
+    @cached_property
+    def skills(self) -> AsyncSkills:
+        from .resources.skills import AsyncSkills
+
+        return AsyncSkills(self)
+
+    @cached_property
+    def vaults(self) -> AsyncVaults:
+        from .resources.vaults import AsyncVaults
+
+        return AsyncVaults(self)
+
+    @cached_property
+    def memory_stores(self) -> AsyncMemoryStores:
+        from .resources.memory_stores import AsyncMemoryStores
+
+        return AsyncMemoryStores(self)
+
+    @cached_property
+    def triggers(self) -> AsyncTriggers:
+        from .resources.triggers import AsyncTriggers
+
+        return AsyncTriggers(self)
+
+    @cached_property
+    def discovery(self) -> AsyncDiscovery:
+        from .resources.discovery import AsyncDiscovery
+
+        return AsyncDiscovery(self)
+
+    @cached_property
     def with_raw_response(self) -> AsyncOrcaWithRawResponse:
         return AsyncOrcaWithRawResponse(self)
 
@@ -427,6 +597,16 @@ class AsyncOrca(AsyncAPIClient):
         )
 
     with_options = copy
+
+    def session(self, session_id: str) -> AsyncSessionHandle:
+        """A handle whose sub-resources carry `session_id` for you.
+
+        Equivalent to calling `client.sessions.*` with the id repeated on every call;
+        it holds no state and performs no I/O when constructed.
+        """
+        from .lib.session import AsyncSessionHandle
+
+        return AsyncSessionHandle(self, session_id)
 
     async def _ensure_extension_available(self, group: str) -> None:
         """Async counterpart to `Orca._ensure_extension_available`.
@@ -549,6 +729,54 @@ class OrcaWithRawResponse:
 
         return AgentsWithRawResponse(self._client.agents)
 
+    @cached_property
+    def sessions(self) -> SessionsWithRawResponse:
+        from .resources.sessions import SessionsWithRawResponse
+
+        return SessionsWithRawResponse(self._client.sessions)
+
+    @cached_property
+    def environments(self) -> EnvironmentsWithRawResponse:
+        from .resources.environments import EnvironmentsWithRawResponse
+
+        return EnvironmentsWithRawResponse(self._client.environments)
+
+    @cached_property
+    def files(self) -> FilesWithRawResponse:
+        from .resources.files import FilesWithRawResponse
+
+        return FilesWithRawResponse(self._client.files)
+
+    @cached_property
+    def skills(self) -> SkillsWithRawResponse:
+        from .resources.skills import SkillsWithRawResponse
+
+        return SkillsWithRawResponse(self._client.skills)
+
+    @cached_property
+    def vaults(self) -> VaultsWithRawResponse:
+        from .resources.vaults import VaultsWithRawResponse
+
+        return VaultsWithRawResponse(self._client.vaults)
+
+    @cached_property
+    def memory_stores(self) -> MemoryStoresWithRawResponse:
+        from .resources.memory_stores import MemoryStoresWithRawResponse
+
+        return MemoryStoresWithRawResponse(self._client.memory_stores)
+
+    @cached_property
+    def triggers(self) -> TriggersWithRawResponse:
+        from .resources.triggers import TriggersWithRawResponse
+
+        return TriggersWithRawResponse(self._client.triggers)
+
+    @cached_property
+    def discovery(self) -> DiscoveryWithRawResponse:
+        from .resources.discovery import DiscoveryWithRawResponse
+
+        return DiscoveryWithRawResponse(self._client.discovery)
+
 
 class AsyncOrcaWithRawResponse:
     _client: AsyncOrca
@@ -561,6 +789,54 @@ class AsyncOrcaWithRawResponse:
         from .resources.agents import AsyncAgentsWithRawResponse
 
         return AsyncAgentsWithRawResponse(self._client.agents)
+
+    @cached_property
+    def sessions(self) -> AsyncSessionsWithRawResponse:
+        from .resources.sessions import AsyncSessionsWithRawResponse
+
+        return AsyncSessionsWithRawResponse(self._client.sessions)
+
+    @cached_property
+    def environments(self) -> AsyncEnvironmentsWithRawResponse:
+        from .resources.environments import AsyncEnvironmentsWithRawResponse
+
+        return AsyncEnvironmentsWithRawResponse(self._client.environments)
+
+    @cached_property
+    def files(self) -> AsyncFilesWithRawResponse:
+        from .resources.files import AsyncFilesWithRawResponse
+
+        return AsyncFilesWithRawResponse(self._client.files)
+
+    @cached_property
+    def skills(self) -> AsyncSkillsWithRawResponse:
+        from .resources.skills import AsyncSkillsWithRawResponse
+
+        return AsyncSkillsWithRawResponse(self._client.skills)
+
+    @cached_property
+    def vaults(self) -> AsyncVaultsWithRawResponse:
+        from .resources.vaults import AsyncVaultsWithRawResponse
+
+        return AsyncVaultsWithRawResponse(self._client.vaults)
+
+    @cached_property
+    def memory_stores(self) -> AsyncMemoryStoresWithRawResponse:
+        from .resources.memory_stores import AsyncMemoryStoresWithRawResponse
+
+        return AsyncMemoryStoresWithRawResponse(self._client.memory_stores)
+
+    @cached_property
+    def triggers(self) -> AsyncTriggersWithRawResponse:
+        from .resources.triggers import AsyncTriggersWithRawResponse
+
+        return AsyncTriggersWithRawResponse(self._client.triggers)
+
+    @cached_property
+    def discovery(self) -> AsyncDiscoveryWithRawResponse:
+        from .resources.discovery import AsyncDiscoveryWithRawResponse
+
+        return AsyncDiscoveryWithRawResponse(self._client.discovery)
 
 
 class OrcaWithStreamedResponse:
@@ -575,6 +851,54 @@ class OrcaWithStreamedResponse:
 
         return AgentsWithStreamingResponse(self._client.agents)
 
+    @cached_property
+    def sessions(self) -> SessionsWithStreamingResponse:
+        from .resources.sessions import SessionsWithStreamingResponse
+
+        return SessionsWithStreamingResponse(self._client.sessions)
+
+    @cached_property
+    def environments(self) -> EnvironmentsWithStreamingResponse:
+        from .resources.environments import EnvironmentsWithStreamingResponse
+
+        return EnvironmentsWithStreamingResponse(self._client.environments)
+
+    @cached_property
+    def files(self) -> FilesWithStreamingResponse:
+        from .resources.files import FilesWithStreamingResponse
+
+        return FilesWithStreamingResponse(self._client.files)
+
+    @cached_property
+    def skills(self) -> SkillsWithStreamingResponse:
+        from .resources.skills import SkillsWithStreamingResponse
+
+        return SkillsWithStreamingResponse(self._client.skills)
+
+    @cached_property
+    def vaults(self) -> VaultsWithStreamingResponse:
+        from .resources.vaults import VaultsWithStreamingResponse
+
+        return VaultsWithStreamingResponse(self._client.vaults)
+
+    @cached_property
+    def memory_stores(self) -> MemoryStoresWithStreamingResponse:
+        from .resources.memory_stores import MemoryStoresWithStreamingResponse
+
+        return MemoryStoresWithStreamingResponse(self._client.memory_stores)
+
+    @cached_property
+    def triggers(self) -> TriggersWithStreamingResponse:
+        from .resources.triggers import TriggersWithStreamingResponse
+
+        return TriggersWithStreamingResponse(self._client.triggers)
+
+    @cached_property
+    def discovery(self) -> DiscoveryWithStreamingResponse:
+        from .resources.discovery import DiscoveryWithStreamingResponse
+
+        return DiscoveryWithStreamingResponse(self._client.discovery)
+
 
 class AsyncOrcaWithStreamedResponse:
     _client: AsyncOrca
@@ -587,6 +911,54 @@ class AsyncOrcaWithStreamedResponse:
         from .resources.agents import AsyncAgentsWithStreamingResponse
 
         return AsyncAgentsWithStreamingResponse(self._client.agents)
+
+    @cached_property
+    def sessions(self) -> AsyncSessionsWithStreamingResponse:
+        from .resources.sessions import AsyncSessionsWithStreamingResponse
+
+        return AsyncSessionsWithStreamingResponse(self._client.sessions)
+
+    @cached_property
+    def environments(self) -> AsyncEnvironmentsWithStreamingResponse:
+        from .resources.environments import AsyncEnvironmentsWithStreamingResponse
+
+        return AsyncEnvironmentsWithStreamingResponse(self._client.environments)
+
+    @cached_property
+    def files(self) -> AsyncFilesWithStreamingResponse:
+        from .resources.files import AsyncFilesWithStreamingResponse
+
+        return AsyncFilesWithStreamingResponse(self._client.files)
+
+    @cached_property
+    def skills(self) -> AsyncSkillsWithStreamingResponse:
+        from .resources.skills import AsyncSkillsWithStreamingResponse
+
+        return AsyncSkillsWithStreamingResponse(self._client.skills)
+
+    @cached_property
+    def vaults(self) -> AsyncVaultsWithStreamingResponse:
+        from .resources.vaults import AsyncVaultsWithStreamingResponse
+
+        return AsyncVaultsWithStreamingResponse(self._client.vaults)
+
+    @cached_property
+    def memory_stores(self) -> AsyncMemoryStoresWithStreamingResponse:
+        from .resources.memory_stores import AsyncMemoryStoresWithStreamingResponse
+
+        return AsyncMemoryStoresWithStreamingResponse(self._client.memory_stores)
+
+    @cached_property
+    def triggers(self) -> AsyncTriggersWithStreamingResponse:
+        from .resources.triggers import AsyncTriggersWithStreamingResponse
+
+        return AsyncTriggersWithStreamingResponse(self._client.triggers)
+
+    @cached_property
+    def discovery(self) -> AsyncDiscoveryWithStreamingResponse:
+        from .resources.discovery import AsyncDiscoveryWithStreamingResponse
+
+        return AsyncDiscoveryWithStreamingResponse(self._client.discovery)
 
 
 Client = Orca
