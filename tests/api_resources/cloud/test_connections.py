@@ -153,10 +153,15 @@ class TestConnections:
         route = respx_mock.put("/apis/cloud.sn.io/v1/connections/events").mock(
             return_value=httpx2.Response(200, json={})
         )
-        client.cloud.connections.update("events", spec={"type": "other", "other": {"endpoint": "https://x"}})
+        client.cloud.connections.update(
+            "events", body_name="events", spec={"type": "other", "other": {"endpoint": "https://x"}}
+        )
         request = _req(route)
         assert request.method == "PUT"
-        assert json.loads(request.content)["spec"]["other"]["endpoint"] == "https://x"
+        body = json.loads(request.content)
+        assert body["spec"]["other"]["endpoint"] == "https://x"
+        # The path names the connection; `body_name` only fills the document's own field.
+        assert body["name"] == "events"
 
     @parametrize
     @pytest.mark.respx(base_url=base_url)

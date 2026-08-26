@@ -171,6 +171,7 @@ class Connections(SyncAPIResource):
         self,
         name: str,
         *,
+        body_name: str | Omit = omit,
         spec: CloudConnectionSpecParam | Omit = omit,
         status: CloudConnectionStatusParam | Omit = omit,
         internal: bool | Omit = omit,
@@ -188,7 +189,12 @@ class Connections(SyncAPIResource):
         response schema, so the parsed body is returned as-is.
 
         Args:
-          name: The connection to replace.
+          name: The connection to replace. This path segment is what the server acts on.
+
+          body_name: The `name` field of the replacement document. The contract accepts it
+              because the body is the whole connection, but the path decides which
+              connection is replaced -- send it only to keep the stored document
+              self-describing, and keep it equal to `name`.
 
           spec: The replacement connection configuration.
 
@@ -213,6 +219,7 @@ class Connections(SyncAPIResource):
             path_template("/apis/cloud.sn.io/v1/connections/{name}", name=name),
             body=maybe_transform(
                 {
+                    "name": body_name,
                     "spec": spec,
                     "status": status,
                     "internal": internal,
@@ -496,6 +503,7 @@ class AsyncConnections(AsyncAPIResource):
         self,
         name: str,
         *,
+        body_name: str | Omit = omit,
         spec: CloudConnectionSpecParam | Omit = omit,
         status: CloudConnectionStatusParam | Omit = omit,
         internal: bool | Omit = omit,
@@ -513,7 +521,12 @@ class AsyncConnections(AsyncAPIResource):
         response schema, so the parsed body is returned as-is.
 
         Args:
-          name: The connection to replace.
+          name: The connection to replace. This path segment is what the server acts on.
+
+          body_name: The `name` field of the replacement document. The contract accepts it
+              because the body is the whole connection, but the path decides which
+              connection is replaced -- send it only to keep the stored document
+              self-describing, and keep it equal to `name`.
 
           spec: The replacement connection configuration.
 
@@ -538,6 +551,7 @@ class AsyncConnections(AsyncAPIResource):
             path_template("/apis/cloud.sn.io/v1/connections/{name}", name=name),
             body=await async_maybe_transform(
                 {
+                    "name": body_name,
                     "spec": spec,
                     "status": status,
                     "internal": internal,
