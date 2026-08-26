@@ -6,13 +6,23 @@ import asyncio
 import inspect
 import logging
 import threading
-from typing import Any, Union, Mapping, Callable, Awaitable, cast
+from typing import TYPE_CHECKING, Any, Union, Mapping, Callable, Awaitable, cast
 from typing_extensions import Self, TypeAlias, override
 
 import httpx2
 
 from . import _exceptions
 from ._qs import Querystring
+
+if TYPE_CHECKING:
+    from .resources.agents import (
+        Agents,
+        AsyncAgents,
+        AgentsWithRawResponse,
+        AsyncAgentsWithRawResponse,
+        AgentsWithStreamingResponse,
+        AsyncAgentsWithStreamingResponse,
+    )
 from ._types import Omit, Timeout, NotGiven, RequestOptions, not_given
 from ._utils import is_given
 from ._compat import cached_property
@@ -145,6 +155,12 @@ class Orca(SyncAPIClient):
             custom_query=default_query,
             _strict_response_validation=_strict_response_validation,
         )
+
+    @cached_property
+    def agents(self) -> Agents:
+        from .resources.agents import Agents
+
+        return Agents(self)
 
     @cached_property
     def with_raw_response(self) -> OrcaWithRawResponse:
@@ -311,6 +327,12 @@ class AsyncOrca(AsyncAPIClient):
             custom_query=default_query,
             _strict_response_validation=_strict_response_validation,
         )
+
+    @cached_property
+    def agents(self) -> AsyncAgents:
+        from .resources.agents import AsyncAgents
+
+        return AsyncAgents(self)
 
     @cached_property
     def with_raw_response(self) -> AsyncOrcaWithRawResponse:
@@ -521,12 +543,24 @@ class OrcaWithRawResponse:
     def __init__(self, client: Orca) -> None:
         self._client = client
 
+    @cached_property
+    def agents(self) -> AgentsWithRawResponse:
+        from .resources.agents import AgentsWithRawResponse
+
+        return AgentsWithRawResponse(self._client.agents)
+
 
 class AsyncOrcaWithRawResponse:
     _client: AsyncOrca
 
     def __init__(self, client: AsyncOrca) -> None:
         self._client = client
+
+    @cached_property
+    def agents(self) -> AsyncAgentsWithRawResponse:
+        from .resources.agents import AsyncAgentsWithRawResponse
+
+        return AsyncAgentsWithRawResponse(self._client.agents)
 
 
 class OrcaWithStreamedResponse:
@@ -535,12 +569,24 @@ class OrcaWithStreamedResponse:
     def __init__(self, client: Orca) -> None:
         self._client = client
 
+    @cached_property
+    def agents(self) -> AgentsWithStreamingResponse:
+        from .resources.agents import AgentsWithStreamingResponse
+
+        return AgentsWithStreamingResponse(self._client.agents)
+
 
 class AsyncOrcaWithStreamedResponse:
     _client: AsyncOrca
 
     def __init__(self, client: AsyncOrca) -> None:
         self._client = client
+
+    @cached_property
+    def agents(self) -> AsyncAgentsWithStreamingResponse:
+        from .resources.agents import AsyncAgentsWithStreamingResponse
+
+        return AsyncAgentsWithStreamingResponse(self._client.agents)
 
 
 Client = Orca
