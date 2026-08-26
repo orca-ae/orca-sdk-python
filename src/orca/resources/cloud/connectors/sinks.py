@@ -46,7 +46,7 @@ class SinkConnectors(SyncAPIResource):
         *,
         data: FileTypes | Omit = omit,
         url: str | Omit = omit,
-        sinkConfig: CloudSinkConfigParam | Omit = omit,
+        sink_config: CloudSinkConfigParam | Omit = omit,
         # Use the following arguments if you need to pass additional parameters to the API that aren't available via kwargs.
         # The extra values given here take precedence over values defined on the client or passed to this method.
         extra_headers: Headers | None = None,
@@ -58,7 +58,7 @@ class SinkConnectors(SyncAPIResource):
         Register a sink connector.
 
         The body is `multipart/form-data`: the connector package arrives either inline
-        as `data` or as a `url` the server fetches, and `sinkConfig` travels as its own
+        as `data` or as a `url` the server fetches, and `sink_config` travels as its own
         JSON part rather than as flattened form fields. The success response carries no
         modelled body.
 
@@ -69,7 +69,7 @@ class SinkConnectors(SyncAPIResource):
 
           url: Location the server fetches the connector package from.
 
-          sinkConfig: The sink's configuration.
+          sink_config: The sink's configuration.
 
           extra_headers: Send extra headers
 
@@ -83,7 +83,7 @@ class SinkConnectors(SyncAPIResource):
         if not name:
             raise ValueError(f"Expected a non-empty value for `name` but received {name!r}")
         body = deepcopy_with_paths(
-            {"data": data, "url": url, "sinkConfig": sinkConfig},
+            {"data": data, "url": url, "sinkConfig": sink_config},
             paths=[["data"]],
         )
         uploads = extract_files(cast(Mapping[str, object], body), paths=[["data"]])
@@ -143,8 +143,8 @@ class SinkConnectors(SyncAPIResource):
         *,
         data: FileTypes | Omit = omit,
         url: str | Omit = omit,
-        sinkConfig: CloudSinkConfigParam | Omit = omit,
-        updateOptions: CloudRuntimeUpdateOptionsParam | Omit = omit,
+        sink_config: CloudSinkConfigParam | Omit = omit,
+        update_options: CloudRuntimeUpdateOptionsParam | Omit = omit,
         extra_headers: Headers | None = None,
         extra_query: Query | None = None,
         extra_body: Body | None = None,
@@ -153,7 +153,7 @@ class SinkConnectors(SyncAPIResource):
         """
         Replace a sink connector's configuration.
 
-        `PUT`, not a partial update: send the whole `sinkConfig`, because fields you
+        `PUT`, not a partial update: send the whole `sink_config`, because fields you
         leave out are dropped rather than preserved. The success response carries no
         modelled body.
 
@@ -164,9 +164,9 @@ class SinkConnectors(SyncAPIResource):
 
           url: Location the server fetches the connector package from.
 
-          sinkConfig: The sink's complete replacement configuration.
+          sink_config: The sink's complete replacement configuration.
 
-          updateOptions: Options that change how the update is applied, such as whether stored
+          update_options: Options that change how the update is applied, such as whether stored
               authentication data is replaced.
 
           extra_headers: Send extra headers
@@ -184,8 +184,8 @@ class SinkConnectors(SyncAPIResource):
             {
                 "data": data,
                 "url": url,
-                "sinkConfig": sinkConfig,
-                "updateOptions": updateOptions,
+                "sinkConfig": sink_config,
+                "updateOptions": update_options,
             },
             paths=[["data"]],
         )
@@ -617,7 +617,7 @@ class AsyncSinkConnectors(AsyncAPIResource):
         *,
         data: FileTypes | Omit = omit,
         url: str | Omit = omit,
-        sinkConfig: CloudSinkConfigParam | Omit = omit,
+        sink_config: CloudSinkConfigParam | Omit = omit,
         # Use the following arguments if you need to pass additional parameters to the API that aren't available via kwargs.
         # The extra values given here take precedence over values defined on the client or passed to this method.
         extra_headers: Headers | None = None,
@@ -629,7 +629,7 @@ class AsyncSinkConnectors(AsyncAPIResource):
         Register a sink connector.
 
         The body is `multipart/form-data`: the connector package arrives either inline
-        as `data` or as a `url` the server fetches, and `sinkConfig` travels as its own
+        as `data` or as a `url` the server fetches, and `sink_config` travels as its own
         JSON part rather than as flattened form fields. The success response carries no
         modelled body.
 
@@ -640,7 +640,7 @@ class AsyncSinkConnectors(AsyncAPIResource):
 
           url: Location the server fetches the connector package from.
 
-          sinkConfig: The sink's configuration.
+          sink_config: The sink's configuration.
 
           extra_headers: Send extra headers
 
@@ -654,7 +654,7 @@ class AsyncSinkConnectors(AsyncAPIResource):
         if not name:
             raise ValueError(f"Expected a non-empty value for `name` but received {name!r}")
         body = deepcopy_with_paths(
-            {"data": data, "url": url, "sinkConfig": sinkConfig},
+            {"data": data, "url": url, "sinkConfig": sink_config},
             paths=[["data"]],
         )
         uploads = extract_files(cast(Mapping[str, object], body), paths=[["data"]])
@@ -714,8 +714,8 @@ class AsyncSinkConnectors(AsyncAPIResource):
         *,
         data: FileTypes | Omit = omit,
         url: str | Omit = omit,
-        sinkConfig: CloudSinkConfigParam | Omit = omit,
-        updateOptions: CloudRuntimeUpdateOptionsParam | Omit = omit,
+        sink_config: CloudSinkConfigParam | Omit = omit,
+        update_options: CloudRuntimeUpdateOptionsParam | Omit = omit,
         extra_headers: Headers | None = None,
         extra_query: Query | None = None,
         extra_body: Body | None = None,
@@ -724,7 +724,7 @@ class AsyncSinkConnectors(AsyncAPIResource):
         """
         Replace a sink connector's configuration.
 
-        `PUT`, not a partial update: send the whole `sinkConfig`, because fields you
+        `PUT`, not a partial update: send the whole `sink_config`, because fields you
         leave out are dropped rather than preserved. The success response carries no
         modelled body.
 
@@ -735,9 +735,9 @@ class AsyncSinkConnectors(AsyncAPIResource):
 
           url: Location the server fetches the connector package from.
 
-          sinkConfig: The sink's complete replacement configuration.
+          sink_config: The sink's complete replacement configuration.
 
-          updateOptions: Options that change how the update is applied, such as whether stored
+          update_options: Options that change how the update is applied, such as whether stored
               authentication data is replaced.
 
           extra_headers: Send extra headers
@@ -755,8 +755,8 @@ class AsyncSinkConnectors(AsyncAPIResource):
             {
                 "data": data,
                 "url": url,
-                "sinkConfig": sinkConfig,
-                "updateOptions": updateOptions,
+                "sinkConfig": sink_config,
+                "updateOptions": update_options,
             },
             paths=[["data"]],
         )
