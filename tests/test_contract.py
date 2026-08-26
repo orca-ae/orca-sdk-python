@@ -12,7 +12,7 @@ from pathlib import Path
 
 import pytest
 
-from orca import Orca
+from orca import Orca, AsyncOrca
 
 SPEC = Path(__file__).parent.parent / "openapi" / "managed-agents.yaml"
 
@@ -127,7 +127,7 @@ def _spec_operation_ids() -> set[str]:
     return set(re.findall(r"^\s*operationId:\s*([\w.]+)\s*$", SPEC.read_text(), re.M))
 
 
-def _resolve(client: Orca, dotted: str) -> object:
+def _resolve(client: Orca | AsyncOrca, dotted: str) -> object:
     target: object = client
     for part in dotted.split("."):
         target = getattr(target, part)
@@ -170,8 +170,6 @@ def test_every_mapping_is_callable() -> None:
 
 def test_async_surface_matches_sync() -> None:
     """The two client trees must expose the same operations."""
-    from orca import AsyncOrca
-
     client = AsyncOrca(api_key="k", base_url="http://127.0.0.1:4010")
     for operation_id, dotted in sorted(SDK_OPERATIONS.items()):
         target = _resolve(client, dotted)
