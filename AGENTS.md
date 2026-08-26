@@ -107,8 +107,25 @@ wrong, push back upstream rather than "correcting" it here.
 ## 7. Types
 
 Responses are `BaseModel` subclasses; request params are `TypedDict, total=False` with `Required[]`
-where the spec demands it. Wire names that aren't valid Python identifiers use
-`Annotated[T, PropertyInfo(alias="created_at[gt]")]`.
+where the spec demands it.
+
+**Aliasing a wire name uses a different mechanism on each, and getting it wrong fails silently:**
+
+| Where | Mechanism |
+|---|---|
+| Request params (`TypedDict`) | `Annotated[T, PropertyInfo(alias="created_at[gt]")]` |
+| Response models (`BaseModel`) | `pydantic.Field(default=None, alias="fieldName")` |
+
+`PropertyInfo(alias=...)` on a response model does **not** raise — it silently yields `None`
+for that field, forever. `tests/test_type_conventions.py` fails the build if one appears.
+
+**Casing follows the wire, not a house style.** Core response attributes are snake_case because
+the core wire format is; `cloud.*` response attributes are camelCase because *its* wire format
+is. Both obey the same rule (§5, "we mirror the wire shape"), so the split between them is
+intentional rather than drift. Method *arguments* are always snake_case — an argument is not a
+wire field, and the wire key is applied at serialization. This is the same distinction the
+TypeScript client draws when it writes `agentId` for an argument and `include_archived` for a
+serialized field.
 
 Naming: `Agent`, `AgentCreateParams`, `AgentUpdateParams`, `AgentListParams`, `DeletedAgent`.
 Open shapes the server hasn't stabilised use `Dict[str, object]` with a one-line comment saying why.

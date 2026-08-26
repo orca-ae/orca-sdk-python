@@ -151,7 +151,11 @@ class TestKafkaPlugins:
         assert_matches_type(CloudKafkaPluginInfoList, plugins, path=["response"])
         assert _req(route).method == "GET"
         # `class` is a Python keyword, so the field is aliased rather than renamed.
+        # The alias must be `pydantic.Field`, not `Annotated[..., PropertyInfo(alias=...)]`:
+        # PropertyInfo is the request-transform path and yields None here *silently*, so
+        # both directions are pinned -- parsed in, and wire-spelled back out.
         assert plugins[0].class_ == "io.example.FileStreamSource"
+        assert plugins[0].to_dict()["class"] == "io.example.FileStreamSource"
 
     @parametrize
     @pytest.mark.respx(base_url=base_url)

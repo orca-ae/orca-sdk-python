@@ -11,17 +11,15 @@ promise.
 
 from __future__ import annotations
 
-from typing import Dict, Mapping, cast
+from typing import Dict
 
 import httpx2
 
 from ._gate import cloud_gate, async_cloud_gate
 from ...types import cloud_package_upload_params, cloud_package_update_metadata_params
-from ..._files import deepcopy_with_paths
 from ..._types import Body, Omit, Query, Headers, NotGiven, FileTypes, omit, not_given
 from ..._utils import (
     transform,
-    extract_files,
     path_template,
     async_transform,
     maybe_transform,
@@ -231,10 +229,11 @@ class Packages(SyncAPIResource):
             raise ValueError(f"Expected a non-empty value for `package_name` but received {package_name!r}")
         if not version:
             raise ValueError(f"Expected a non-empty value for `version` but received {version!r}")
-        body = deepcopy_with_paths({"metadata": metadata, "file": file}, paths=[["file"]])
-        uploads = extract_files(cast(Mapping[str, object], body), paths=[["file"]])
-        fields, json_parts = encode_cloud_multipart(
-            transform(body, cloud_package_upload_params.CloudPackageUploadParams)
+        # `transform` is load-bearing, not cosmetic: it rewrites these snake_case
+        # argument keys into their wire spellings, and the encoder names each part
+        # after the key it receives.
+        fields, parts = encode_cloud_multipart(
+            transform({"metadata": metadata, "file": file}, cloud_package_upload_params.CloudPackageUploadParams)
         )
         # The Content-Type actually sent carries a `boundary` parameter that httpx
         # fills in, e.g. `multipart/form-data; boundary=---abc--`.
@@ -247,7 +246,7 @@ class Packages(SyncAPIResource):
                 version=version,
             ),
             body=fields,
-            files=[*uploads, *json_parts],
+            files=parts,
             options=make_request_options(
                 extra_headers=extra_headers, extra_query=extra_query, extra_body=extra_body, timeout=timeout
             ),
@@ -366,8 +365,8 @@ class Packages(SyncAPIResource):
         *,
         description: str | Omit = omit,
         contact: str | Omit = omit,
-        createTime: int | Omit = omit,
-        modificationTime: int | Omit = omit,
+        create_time: int | Omit = omit,
+        modification_time: int | Omit = omit,
         properties: Dict[str, str] | Omit = omit,
         extra_headers: Headers | None = None,
         extra_query: Query | None = None,
@@ -393,9 +392,10 @@ class Packages(SyncAPIResource):
 
           contact: Who to contact about this package.
 
-          createTime: Epoch milliseconds, per the contract's int64 timestamps.
+          create_time: Epoch milliseconds, per the contract's int64 timestamps. Sent as `createTime`.
 
-          modificationTime: Epoch milliseconds, per the contract's int64 timestamps.
+          modification_time: Epoch milliseconds, per the contract's int64 timestamps. Sent as
+              `modificationTime`.
 
           properties: Arbitrary string key/value pairs.
 
@@ -425,8 +425,8 @@ class Packages(SyncAPIResource):
                 {
                     "description": description,
                     "contact": contact,
-                    "createTime": createTime,
-                    "modificationTime": modificationTime,
+                    "create_time": create_time,
+                    "modification_time": modification_time,
                     "properties": properties,
                 },
                 cloud_package_update_metadata_params.CloudPackageUpdateMetadataParams,
@@ -627,10 +627,13 @@ class AsyncPackages(AsyncAPIResource):
             raise ValueError(f"Expected a non-empty value for `package_name` but received {package_name!r}")
         if not version:
             raise ValueError(f"Expected a non-empty value for `version` but received {version!r}")
-        body = deepcopy_with_paths({"metadata": metadata, "file": file}, paths=[["file"]])
-        uploads = extract_files(cast(Mapping[str, object], body), paths=[["file"]])
-        fields, json_parts = encode_cloud_multipart(
-            await async_transform(body, cloud_package_upload_params.CloudPackageUploadParams)
+        # `transform` is load-bearing, not cosmetic: it rewrites these snake_case
+        # argument keys into their wire spellings, and the encoder names each part
+        # after the key it receives.
+        fields, parts = encode_cloud_multipart(
+            await async_transform(
+                {"metadata": metadata, "file": file}, cloud_package_upload_params.CloudPackageUploadParams
+            )
         )
         # The Content-Type actually sent carries a `boundary` parameter that httpx
         # fills in, e.g. `multipart/form-data; boundary=---abc--`.
@@ -643,7 +646,7 @@ class AsyncPackages(AsyncAPIResource):
                 version=version,
             ),
             body=fields,
-            files=[*uploads, *json_parts],
+            files=parts,
             options=make_request_options(
                 extra_headers=extra_headers, extra_query=extra_query, extra_body=extra_body, timeout=timeout
             ),
@@ -762,8 +765,8 @@ class AsyncPackages(AsyncAPIResource):
         *,
         description: str | Omit = omit,
         contact: str | Omit = omit,
-        createTime: int | Omit = omit,
-        modificationTime: int | Omit = omit,
+        create_time: int | Omit = omit,
+        modification_time: int | Omit = omit,
         properties: Dict[str, str] | Omit = omit,
         extra_headers: Headers | None = None,
         extra_query: Query | None = None,
@@ -789,9 +792,10 @@ class AsyncPackages(AsyncAPIResource):
 
           contact: Who to contact about this package.
 
-          createTime: Epoch milliseconds, per the contract's int64 timestamps.
+          create_time: Epoch milliseconds, per the contract's int64 timestamps. Sent as `createTime`.
 
-          modificationTime: Epoch milliseconds, per the contract's int64 timestamps.
+          modification_time: Epoch milliseconds, per the contract's int64 timestamps. Sent as
+              `modificationTime`.
 
           properties: Arbitrary string key/value pairs.
 
@@ -821,8 +825,8 @@ class AsyncPackages(AsyncAPIResource):
                 {
                     "description": description,
                     "contact": contact,
-                    "createTime": createTime,
-                    "modificationTime": modificationTime,
+                    "create_time": create_time,
+                    "modification_time": modification_time,
                     "properties": properties,
                 },
                 cloud_package_update_metadata_params.CloudPackageUpdateMetadataParams,

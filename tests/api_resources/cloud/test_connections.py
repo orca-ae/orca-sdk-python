@@ -106,7 +106,7 @@ class TestConnections:
             },
             status={"phase": "Unknown"},
             internal=True,
-            clusterRef="cluster-1",
+            cluster_ref="cluster-1",
         )
         body = json.loads(_req(route).content)
         # camelCase reaches the wire untouched -- the cloud extension does not use
@@ -276,7 +276,7 @@ class TestAsyncConnections:
     async def test_method_create(self, async_client: AsyncOrca, respx_mock: MockRouter) -> None:
         _gate(respx_mock, async_client)
         route = respx_mock.post("/apis/cloud.sn.io/v1/connections").mock(return_value=httpx2.Response(200, json={}))
-        await async_client.cloud.connections.create(name="events", spec={"type": "kafka"}, clusterRef="c1")
+        await async_client.cloud.connections.create(name="events", spec={"type": "kafka"}, cluster_ref="c1")
         body = json.loads(_req(route).content)
         assert body == {"name": "events", "spec": {"type": "kafka"}, "clusterRef": "c1"}
 

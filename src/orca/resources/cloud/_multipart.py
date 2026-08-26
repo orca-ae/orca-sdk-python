@@ -17,7 +17,7 @@ sends multipart encodes it identically.
 
 from __future__ import annotations
 
-from typing import Dict, List, Tuple, Mapping, Optional, cast
+from typing import Dict, List, Tuple, Mapping, cast
 
 from ..._files import is_file_content
 from ..._types import FileTypes
@@ -29,9 +29,7 @@ __all__ = ["encode_cloud_multipart", "JSON_PART_CONTENT_TYPE"]
 JSON_PART_CONTENT_TYPE = "application/json"
 
 
-def encode_cloud_multipart(
-    body: Optional[Mapping[str, object]],
-) -> Tuple[Dict[str, object], List[Tuple[str, FileTypes]]]:
+def encode_cloud_multipart(body: Mapping[str, object]) -> Tuple[Dict[str, object], List[Tuple[str, FileTypes]]]:
     """Split a cloud multipart body into its form fields and its file parts.
 
     Returns `(fields, files)`: `fields` are the scalars, ready to pass as the
@@ -39,14 +37,17 @@ def encode_cloud_multipart(
     both caller-supplied uploads and the synthetic `{field}.json` documents that
     carry structured values.
 
+    Pass the body through `transform` first: this reads part names straight off
+    the mapping's keys, so they have to be the wire spellings the contract
+    declares, not the snake_case argument names the methods take.
+
     Values that were never given are dropped, matching how omitted arguments are
-    handled everywhere else. `None` is accepted so call sites can feed
-    `maybe_transform` straight in; an absent body encodes to no parts at all.
+    handled everywhere else.
     """
     fields: Dict[str, object] = {}
     files: List[Tuple[str, FileTypes]] = []
 
-    for key, value in (body or {}).items():
+    for key, value in body.items():
         if not is_given(value):
             continue
 
