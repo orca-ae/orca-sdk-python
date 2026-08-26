@@ -798,8 +798,10 @@ class Functions(SyncAPIResource):
         """
         Trigger a function with one input message and return its output.
 
-        The body is `multipart/form-data`, and the response is the function's
-        raw output text.
+        The body is `multipart/form-data`. The response body is handed back as
+        raw text rather than JSON-decoded, so a contract that quotes the output
+        leaves the quotes in place -- the same convention `health` uses for its
+        scalar responses.
 
         Args:
           function_name: The function to trigger.
@@ -1597,8 +1599,10 @@ class AsyncFunctions(AsyncAPIResource):
         """
         Trigger a function with one input message and return its output.
 
-        The body is `multipart/form-data`, and the response is the function's
-        raw output text.
+        The body is `multipart/form-data`. The response body is handed back as
+        raw text rather than JSON-decoded, so a contract that quotes the output
+        leaves the quotes in place -- the same convention `health` uses for its
+        scalar responses.
 
         Args:
           function_name: The function to trigger.

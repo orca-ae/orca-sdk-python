@@ -12,8 +12,8 @@ from respx import MockRouter
 
 from orca import Orca, AsyncOrca, ExtensionNotAvailableError
 from tests.utils import assert_matches_type
-from orca.types.cloud_function_stats import CloudFunctionStats, CloudFunctionInstanceStats
 from orca.types.cloud_function_state import CloudFunctionState
+from orca.types.cloud_function_stats import CloudFunctionStats, CloudFunctionInstanceStats
 from orca.types.cloud_function_config import CloudFunctionConfig
 from orca.types.cloud_function_status import CloudFunctionStatus, CloudFunctionInstanceStatus
 
@@ -182,9 +182,7 @@ class TestFunctions:
         assert request.method == "PUT"
         parts = _parts(request)
         assert parts["updateOptions"].get_filename() == "updateOptions.json"
-        assert json.loads(cast(bytes, parts["updateOptions"].get_payload(decode=True))) == {
-            "update-auth-data": True
-        }
+        assert json.loads(cast(bytes, parts["updateOptions"].get_payload(decode=True))) == {"update-auth-data": True}
 
     @parametrize
     @pytest.mark.respx(base_url=base_url)
@@ -293,9 +291,7 @@ class TestFunctions:
     )
     @parametrize
     @pytest.mark.respx(base_url=base_url)
-    def test_method_lifecycle_actions(
-        self, client: Orca, respx_mock: MockRouter, method: str, suffix: str
-    ) -> None:
+    def test_method_lifecycle_actions(self, client: Orca, respx_mock: MockRouter, method: str, suffix: str) -> None:
         """Whole-function actions hang off the resource as a literal colon suffix."""
         _gate(respx_mock, client)
         path = f"/apis/cloud.sn.io/v1/functions/transform{suffix}"
@@ -412,9 +408,7 @@ class TestAsyncFunctions:
         route = respx_mock.post("/apis/cloud.sn.io/v1/functions/transform").mock(
             return_value=httpx2.Response(200, json={})
         )
-        await async_client.cloud.functions.create(
-            "transform", data=b"jar-bytes", functionConfig={"parallelism": 2}
-        )
+        await async_client.cloud.functions.create("transform", data=b"jar-bytes", functionConfig={"parallelism": 2})
         parts = _parts(_req(route))
         assert parts["functionConfig"].get_filename() == "functionConfig.json"
         assert parts["data"].get_payload(decode=True) == b"jar-bytes"
@@ -438,9 +432,7 @@ class TestAsyncFunctions:
         )
         await async_client.cloud.functions.update("transform", updateOptions={"update_auth_data": False})
         parts = _parts(_req(route))
-        assert json.loads(cast(bytes, parts["updateOptions"].get_payload(decode=True))) == {
-            "update-auth-data": False
-        }
+        assert json.loads(cast(bytes, parts["updateOptions"].get_payload(decode=True))) == {"update-auth-data": False}
 
     @parametrize
     @pytest.mark.respx(base_url=base_url)
@@ -468,9 +460,7 @@ class TestAsyncFunctions:
     @pytest.mark.respx(base_url=base_url)
     async def test_method_list(self, async_client: AsyncOrca, respx_mock: MockRouter) -> None:
         _gate(respx_mock, async_client)
-        respx_mock.get("/apis/cloud.sn.io/v1/functions").mock(
-            return_value=httpx2.Response(200, json=["transform"])
-        )
+        respx_mock.get("/apis/cloud.sn.io/v1/functions").mock(return_value=httpx2.Response(200, json=["transform"]))
         assert await async_client.cloud.functions.list() == ["transform"]
 
     @pytest.mark.parametrize(
@@ -528,29 +518,21 @@ class TestAsyncFunctions:
 
     @parametrize
     @pytest.mark.respx(base_url=base_url)
-    async def test_streaming_response_retrieve_status(
-        self, async_client: AsyncOrca, respx_mock: MockRouter
-    ) -> None:
+    async def test_streaming_response_retrieve_status(self, async_client: AsyncOrca, respx_mock: MockRouter) -> None:
         _gate(respx_mock, async_client)
         respx_mock.get("/apis/cloud.sn.io/v1/functions/transform/status").mock(
             return_value=httpx2.Response(200, json=STATUS)
         )
-        async with async_client.cloud.functions.with_streaming_response.retrieve_status(
-            "transform"
-        ) as response:
+        async with async_client.cloud.functions.with_streaming_response.retrieve_status("transform") as response:
             assert not response.is_closed
             assert_matches_type(CloudFunctionStatus, await response.parse(), path=["response"])
         assert cast(Any, response.is_closed) is True
 
     @parametrize
     @pytest.mark.respx(base_url=base_url, assert_all_called=False)
-    async def test_gate_blocks_when_extension_absent(
-        self, async_client: AsyncOrca, respx_mock: MockRouter
-    ) -> None:
+    async def test_gate_blocks_when_extension_absent(self, async_client: AsyncOrca, respx_mock: MockRouter) -> None:
         _gate(respx_mock, async_client, available=False)
-        route = respx_mock.get("/apis/cloud.sn.io/v1/functions").mock(
-            return_value=httpx2.Response(200, json=[])
-        )
+        route = respx_mock.get("/apis/cloud.sn.io/v1/functions").mock(return_value=httpx2.Response(200, json=[]))
         with pytest.raises(ExtensionNotAvailableError):
             await async_client.cloud.functions.list()
         assert route.called is False
