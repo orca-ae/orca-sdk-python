@@ -1,13 +1,12 @@
 from __future__ import annotations
 
 from typing import Dict, List, Optional
-from typing_extensions import Literal, TypeAlias
+from typing_extensions import Literal
 
 from .._models import BaseModel
 
 __all__ = [
     "CloudConnection",
-    "CloudConnectionListResponse",
     "CloudConnectionHealth",
     "CloudConnectionSpec",
     "CloudConnectionStatus",
@@ -211,6 +210,3 @@ class CloudConnectionHealth(BaseModel):
     message: Optional[str] = None
 
     lastTestedAt: Optional[str] = None
-
-
-CloudConnectionListResponse: TypeAlias = List[CloudConnection]
