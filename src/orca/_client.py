@@ -16,6 +16,14 @@ from ._qs import Querystring
 
 if TYPE_CHECKING:
     from .lib.session import SessionHandle, AsyncSessionHandle
+    from .resources.cloud import (
+        Cloud,
+        AsyncCloud,
+        CloudWithRawResponse,
+        AsyncCloudWithRawResponse,
+        CloudWithStreamingResponse,
+        AsyncCloudWithStreamingResponse,
+    )
     from .resources.files import (
         Files,
         AsyncFiles,
@@ -276,6 +284,12 @@ class Orca(SyncAPIClient):
         return Discovery(self)
 
     @cached_property
+    def cloud(self) -> Cloud:
+        from .resources.cloud import Cloud
+
+        return Cloud(self)
+
+    @cached_property
     def with_raw_response(self) -> OrcaWithRawResponse:
         return OrcaWithRawResponse(self)
 
@@ -504,6 +518,12 @@ class AsyncOrca(AsyncAPIClient):
         from .resources.discovery import AsyncDiscovery
 
         return AsyncDiscovery(self)
+
+    @cached_property
+    def cloud(self) -> AsyncCloud:
+        from .resources.cloud import AsyncCloud
+
+        return AsyncCloud(self)
 
     @cached_property
     def with_raw_response(self) -> AsyncOrcaWithRawResponse:
@@ -778,6 +798,12 @@ class OrcaWithRawResponse:
 
         return DiscoveryWithRawResponse(self._client.discovery)
 
+    @cached_property
+    def cloud(self) -> CloudWithRawResponse:
+        from .resources.cloud import CloudWithRawResponse
+
+        return CloudWithRawResponse(self._client.cloud)
+
 
 class AsyncOrcaWithRawResponse:
     _client: AsyncOrca
@@ -838,6 +864,12 @@ class AsyncOrcaWithRawResponse:
         from .resources.discovery import AsyncDiscoveryWithRawResponse
 
         return AsyncDiscoveryWithRawResponse(self._client.discovery)
+
+    @cached_property
+    def cloud(self) -> AsyncCloudWithRawResponse:
+        from .resources.cloud import AsyncCloudWithRawResponse
+
+        return AsyncCloudWithRawResponse(self._client.cloud)
 
 
 class OrcaWithStreamedResponse:
@@ -900,6 +932,12 @@ class OrcaWithStreamedResponse:
 
         return DiscoveryWithStreamingResponse(self._client.discovery)
 
+    @cached_property
+    def cloud(self) -> CloudWithStreamingResponse:
+        from .resources.cloud import CloudWithStreamingResponse
+
+        return CloudWithStreamingResponse(self._client.cloud)
+
 
 class AsyncOrcaWithStreamedResponse:
     _client: AsyncOrca
@@ -960,6 +998,12 @@ class AsyncOrcaWithStreamedResponse:
         from .resources.discovery import AsyncDiscoveryWithStreamingResponse
 
         return AsyncDiscoveryWithStreamingResponse(self._client.discovery)
+
+    @cached_property
+    def cloud(self) -> AsyncCloudWithStreamingResponse:
+        from .resources.cloud import AsyncCloudWithStreamingResponse
+
+        return AsyncCloudWithStreamingResponse(self._client.cloud)
 
 
 Client = Orca
