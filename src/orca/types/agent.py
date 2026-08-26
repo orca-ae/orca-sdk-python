@@ -4,7 +4,7 @@ from typing import Dict, List, Union, Optional
 from typing_extensions import Literal, TypeAlias
 
 from .._models import BaseModel
-from .agent_shared import ModelEffort, McpServerDefinition, AgentMultiagentDefinition
+from .agent_shared import ModelEffort, SkillSource, McpServerDefinition, AgentMultiagentDefinition
 
 __all__ = ["Agent", "AgentResponseModel", "AgentResponseSkillDefinition", "DeletedAgent"]
 
@@ -27,8 +27,8 @@ AgentResponseModel: TypeAlias = Union[AgentModelBasic, AgentModelProviderQualifi
 
 
 class AgentResponseSkillDefinition(BaseModel):
-    type: str
-    """Skill source discriminator; see `AgentSkillDefinitionParam.type`."""
+    type: SkillSource
+    """Where the skill comes from. Values are fixed by the API contract."""
 
     skill_id: str
 
