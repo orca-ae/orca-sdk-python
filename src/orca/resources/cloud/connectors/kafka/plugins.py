@@ -46,7 +46,7 @@ class Plugins(SyncAPIResource):
     def list(
         self,
         *,
-        connectorsOnly: bool | Omit = omit,
+        connectors_only: bool | Omit = omit,
         # Use the following arguments if you need to pass additional parameters to the API that aren't available via kwargs.
         # The extra values given here take precedence over values defined on the client or passed to this method.
         extra_headers: Headers | None = None,
@@ -58,7 +58,7 @@ class Plugins(SyncAPIResource):
         List the plugins installed on the worker.
 
         Args:
-          connectorsOnly: List only connector plugins instead of every plugin the worker has loaded.
+          connectors_only: List only connector plugins instead of every plugin the worker has loaded.
 
           extra_headers: Send extra headers
 
@@ -77,7 +77,7 @@ class Plugins(SyncAPIResource):
                 extra_body=extra_body,
                 timeout=timeout,
                 query=maybe_transform(
-                    {"connectorsOnly": connectorsOnly},
+                    {"connectorsOnly": connectors_only},
                     cloud_kafka_plugin_list_params.CloudKafkaPluginListParams,
                 ),
             ),
@@ -171,7 +171,7 @@ class AsyncPlugins(AsyncAPIResource):
     async def list(
         self,
         *,
-        connectorsOnly: bool | Omit = omit,
+        connectors_only: bool | Omit = omit,
         extra_headers: Headers | None = None,
         extra_query: Query | None = None,
         extra_body: Body | None = None,
@@ -181,7 +181,7 @@ class AsyncPlugins(AsyncAPIResource):
         List the plugins installed on the worker.
 
         Args:
-          connectorsOnly: List only connector plugins instead of every plugin the worker has loaded.
+          connectors_only: List only connector plugins instead of every plugin the worker has loaded.
 
           extra_headers: Send extra headers
 
@@ -200,7 +200,7 @@ class AsyncPlugins(AsyncAPIResource):
                 extra_body=extra_body,
                 timeout=timeout,
                 query=maybe_transform(
-                    {"connectorsOnly": connectorsOnly},
+                    {"connectorsOnly": connectors_only},
                     cloud_kafka_plugin_list_params.CloudKafkaPluginListParams,
                 ),
             ),

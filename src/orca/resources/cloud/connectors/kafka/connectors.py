@@ -645,8 +645,8 @@ class KafkaConnectors(SyncAPIResource):
         self,
         name: str,
         *,
-        includeTasks: bool | Omit = omit,
-        onlyFailed: bool | Omit = omit,
+        include_tasks: bool | Omit = omit,
+        only_failed: bool | Omit = omit,
         extra_headers: Headers | None = None,
         extra_query: Query | None = None,
         extra_body: Body | None = None,
@@ -662,9 +662,9 @@ class KafkaConnectors(SyncAPIResource):
         Args:
           name: The connector to restart.
 
-          includeTasks: Whether to restart the connector's tasks as well as the connector itself.
+          include_tasks: Whether to restart the connector's tasks as well as the connector itself.
 
-          onlyFailed: Whether to restart only the failed connector and tasks.
+          only_failed: Whether to restart only the failed connector and tasks.
 
           extra_headers: Send extra headers
 
@@ -685,7 +685,7 @@ class KafkaConnectors(SyncAPIResource):
                 extra_body=extra_body,
                 timeout=timeout,
                 query=maybe_transform(
-                    {"includeTasks": includeTasks, "onlyFailed": onlyFailed},
+                    {"includeTasks": include_tasks, "onlyFailed": only_failed},
                     cloud_kafka_connector_restart_params.CloudKafkaConnectorRestartParams,
                 ),
             ),
@@ -1420,8 +1420,8 @@ class AsyncKafkaConnectors(AsyncAPIResource):
         self,
         name: str,
         *,
-        includeTasks: bool | Omit = omit,
-        onlyFailed: bool | Omit = omit,
+        include_tasks: bool | Omit = omit,
+        only_failed: bool | Omit = omit,
         extra_headers: Headers | None = None,
         extra_query: Query | None = None,
         extra_body: Body | None = None,
@@ -1437,9 +1437,9 @@ class AsyncKafkaConnectors(AsyncAPIResource):
         Args:
           name: The connector to restart.
 
-          includeTasks: Whether to restart the connector's tasks as well as the connector itself.
+          include_tasks: Whether to restart the connector's tasks as well as the connector itself.
 
-          onlyFailed: Whether to restart only the failed connector and tasks.
+          only_failed: Whether to restart only the failed connector and tasks.
 
           extra_headers: Send extra headers
 
@@ -1460,7 +1460,7 @@ class AsyncKafkaConnectors(AsyncAPIResource):
                 extra_body=extra_body,
                 timeout=timeout,
                 query=await async_maybe_transform(
-                    {"includeTasks": includeTasks, "onlyFailed": onlyFailed},
+                    {"includeTasks": include_tasks, "onlyFailed": only_failed},
                     cloud_kafka_connector_restart_params.CloudKafkaConnectorRestartParams,
                 ),
             ),

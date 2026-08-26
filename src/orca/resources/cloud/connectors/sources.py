@@ -46,7 +46,7 @@ class SourceConnectors(SyncAPIResource):
         *,
         data: FileTypes | Omit = omit,
         url: str | Omit = omit,
-        sourceConfig: CloudSourceConfigParam | Omit = omit,
+        source_config: CloudSourceConfigParam | Omit = omit,
         # Use the following arguments if you need to pass additional parameters to the API that aren't available via kwargs.
         # The extra values given here take precedence over values defined on the client or passed to this method.
         extra_headers: Headers | None = None,
@@ -58,7 +58,7 @@ class SourceConnectors(SyncAPIResource):
         Register a source connector.
 
         The body is `multipart/form-data`: the connector package arrives either inline
-        as `data` or as a `url` the server fetches, and `sourceConfig` travels as its own
+        as `data` or as a `url` the server fetches, and `source_config` travels as its own
         JSON part rather than as flattened form fields. The success response carries no
         modelled body.
 
@@ -69,7 +69,7 @@ class SourceConnectors(SyncAPIResource):
 
           url: Location the server fetches the connector package from.
 
-          sourceConfig: The source's configuration.
+          source_config: The source's configuration.
 
           extra_headers: Send extra headers
 
@@ -83,7 +83,7 @@ class SourceConnectors(SyncAPIResource):
         if not name:
             raise ValueError(f"Expected a non-empty value for `name` but received {name!r}")
         body = deepcopy_with_paths(
-            {"data": data, "url": url, "sourceConfig": sourceConfig},
+            {"data": data, "url": url, "sourceConfig": source_config},
             paths=[["data"]],
         )
         uploads = extract_files(cast(Mapping[str, object], body), paths=[["data"]])
@@ -143,8 +143,8 @@ class SourceConnectors(SyncAPIResource):
         *,
         data: FileTypes | Omit = omit,
         url: str | Omit = omit,
-        sourceConfig: CloudSourceConfigParam | Omit = omit,
-        updateOptions: CloudRuntimeUpdateOptionsParam | Omit = omit,
+        source_config: CloudSourceConfigParam | Omit = omit,
+        update_options: CloudRuntimeUpdateOptionsParam | Omit = omit,
         extra_headers: Headers | None = None,
         extra_query: Query | None = None,
         extra_body: Body | None = None,
@@ -153,7 +153,7 @@ class SourceConnectors(SyncAPIResource):
         """
         Replace a source connector's configuration.
 
-        `PUT`, not a partial update: send the whole `sourceConfig`, because fields you
+        `PUT`, not a partial update: send the whole `source_config`, because fields you
         leave out are dropped rather than preserved. The success response carries no
         modelled body.
 
@@ -164,9 +164,9 @@ class SourceConnectors(SyncAPIResource):
 
           url: Location the server fetches the connector package from.
 
-          sourceConfig: The source's complete replacement configuration.
+          source_config: The source's complete replacement configuration.
 
-          updateOptions: Options that change how the update is applied, such as whether stored
+          update_options: Options that change how the update is applied, such as whether stored
               authentication data is replaced.
 
           extra_headers: Send extra headers
@@ -184,8 +184,8 @@ class SourceConnectors(SyncAPIResource):
             {
                 "data": data,
                 "url": url,
-                "sourceConfig": sourceConfig,
-                "updateOptions": updateOptions,
+                "sourceConfig": source_config,
+                "updateOptions": update_options,
             },
             paths=[["data"]],
         )
@@ -619,7 +619,7 @@ class AsyncSourceConnectors(AsyncAPIResource):
         *,
         data: FileTypes | Omit = omit,
         url: str | Omit = omit,
-        sourceConfig: CloudSourceConfigParam | Omit = omit,
+        source_config: CloudSourceConfigParam | Omit = omit,
         # Use the following arguments if you need to pass additional parameters to the API that aren't available via kwargs.
         # The extra values given here take precedence over values defined on the client or passed to this method.
         extra_headers: Headers | None = None,
@@ -631,7 +631,7 @@ class AsyncSourceConnectors(AsyncAPIResource):
         Register a source connector.
 
         The body is `multipart/form-data`: the connector package arrives either inline
-        as `data` or as a `url` the server fetches, and `sourceConfig` travels as its own
+        as `data` or as a `url` the server fetches, and `source_config` travels as its own
         JSON part rather than as flattened form fields. The success response carries no
         modelled body.
 
@@ -642,7 +642,7 @@ class AsyncSourceConnectors(AsyncAPIResource):
 
           url: Location the server fetches the connector package from.
 
-          sourceConfig: The source's configuration.
+          source_config: The source's configuration.
 
           extra_headers: Send extra headers
 
@@ -656,7 +656,7 @@ class AsyncSourceConnectors(AsyncAPIResource):
         if not name:
             raise ValueError(f"Expected a non-empty value for `name` but received {name!r}")
         body = deepcopy_with_paths(
-            {"data": data, "url": url, "sourceConfig": sourceConfig},
+            {"data": data, "url": url, "sourceConfig": source_config},
             paths=[["data"]],
         )
         uploads = extract_files(cast(Mapping[str, object], body), paths=[["data"]])
@@ -716,8 +716,8 @@ class AsyncSourceConnectors(AsyncAPIResource):
         *,
         data: FileTypes | Omit = omit,
         url: str | Omit = omit,
-        sourceConfig: CloudSourceConfigParam | Omit = omit,
-        updateOptions: CloudRuntimeUpdateOptionsParam | Omit = omit,
+        source_config: CloudSourceConfigParam | Omit = omit,
+        update_options: CloudRuntimeUpdateOptionsParam | Omit = omit,
         extra_headers: Headers | None = None,
         extra_query: Query | None = None,
         extra_body: Body | None = None,
@@ -726,7 +726,7 @@ class AsyncSourceConnectors(AsyncAPIResource):
         """
         Replace a source connector's configuration.
 
-        `PUT`, not a partial update: send the whole `sourceConfig`, because fields you
+        `PUT`, not a partial update: send the whole `source_config`, because fields you
         leave out are dropped rather than preserved. The success response carries no
         modelled body.
 
@@ -737,9 +737,9 @@ class AsyncSourceConnectors(AsyncAPIResource):
 
           url: Location the server fetches the connector package from.
 
-          sourceConfig: The source's complete replacement configuration.
+          source_config: The source's complete replacement configuration.
 
-          updateOptions: Options that change how the update is applied, such as whether stored
+          update_options: Options that change how the update is applied, such as whether stored
               authentication data is replaced.
 
           extra_headers: Send extra headers
@@ -757,8 +757,8 @@ class AsyncSourceConnectors(AsyncAPIResource):
             {
                 "data": data,
                 "url": url,
-                "sourceConfig": sourceConfig,
-                "updateOptions": updateOptions,
+                "sourceConfig": source_config,
+                "updateOptions": update_options,
             },
             paths=[["data"]],
         )

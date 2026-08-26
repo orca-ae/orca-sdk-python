@@ -158,7 +158,7 @@ class TestKafkaPlugins:
     def test_method_list_with_filter(self, client: Orca, respx_mock: MockRouter) -> None:
         _gate(respx_mock, client)
         route = respx_mock.get(PLUGINS).mock(return_value=httpx2.Response(200, json=PLUGIN_INFO))
-        Cloud(client).connectors.kafka.plugins.list(connectorsOnly=True)
+        Cloud(client).connectors.kafka.plugins.list(connectors_only=True)
         assert _req(route).url.params["connectorsOnly"] == "true"
 
     @parametrize
@@ -404,7 +404,7 @@ class TestKafkaConnectors:
         route = respx_mock.post(url__regex=r".*/connectors/events.*").mock(
             return_value=httpx2.Response(200, json=CONNECTOR_STATE_INFO)
         )
-        Cloud(client).connectors.kafka.connectors.restart("events", includeTasks=True, onlyFailed=False)
+        Cloud(client).connectors.kafka.connectors.restart("events", include_tasks=True, only_failed=False)
         request = _req(route)
         # Restart is POST while pause/resume/stop are PUT; the contract mixes them.
         assert request.method == "POST"
@@ -503,7 +503,7 @@ class TestAsyncKafka:
             return_value=httpx2.Response(200, json=CONFIG_KEYS)
         )
         plugins = AsyncCloud(async_client).connectors.kafka.plugins
-        assert_matches_type(CloudKafkaPluginInfoList, await plugins.list(connectorsOnly=True), path=["response"])
+        assert_matches_type(CloudKafkaPluginInfoList, await plugins.list(connectors_only=True), path=["response"])
         assert_matches_type(CloudKafkaPluginCatalogEntryList, await plugins.list_catalog(), path=["response"])
         assert_matches_type(
             CloudKafkaConfigKeyInfoList, await plugins.retrieve_config("FileStreamSource"), path=["response"]
@@ -574,7 +574,7 @@ class TestAsyncKafka:
         )
         task = respx_mock.post(f"{CONNECTORS}/events/tasks/0/restart").mock(return_value=httpx2.Response(200, json={}))
         connectors = AsyncCloud(async_client).connectors.kafka.connectors
-        await connectors.restart("events", includeTasks=True)
+        await connectors.restart("events", include_tasks=True)
         await connectors.restart_task("events", 0)
         assert _req(restart).method == "POST"
         assert _req(restart).url.params["includeTasks"] == "true"
