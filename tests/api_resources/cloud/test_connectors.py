@@ -148,8 +148,8 @@ def _name_list_type(kind: str) -> Any:
 
 
 def _config_kwarg(kind: str, value: Any) -> dict[str, Any]:
-    """The config part is named after its own connector kind on the wire."""
-    return {"sinkConfig" if kind == "sinks" else "sourceConfig": value}
+    """The config argument is named after its own connector kind."""
+    return {"sink_config" if kind == "sinks" else "source_config": value}
 
 
 class TestConnectors:
@@ -210,7 +210,7 @@ class TestConnectors:
         route = respx_mock.put(f"{V1}/connectors/{kind}/archive").mock(return_value=httpx2.Response(200, json={}))
         _sync_kind(client, kind).update(
             "archive",
-            updateOptions={"update_auth_data": True},
+            update_options={"update_auth_data": True},
             **_config_kwarg(kind, CONFIGS[kind]),
         )
         request = _req(route)
