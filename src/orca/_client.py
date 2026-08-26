@@ -15,6 +15,7 @@ from . import _exceptions
 from ._qs import Querystring
 
 if TYPE_CHECKING:
+    from .lib.session import SessionHandle, AsyncSessionHandle
     from .resources.files import (
         Files,
         AsyncFiles,
