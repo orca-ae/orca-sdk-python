@@ -1,0 +1,17 @@
+#!/usr/bin/env bash
+set -euo pipefail
+cd "$(dirname "$0")/.."
+
+echo "==> Running branding check"
+./scripts/check-branding
+
+echo "==> Running ruff"
+uv run ruff check .
+uv run ruff format --check .
+
+echo "==> Running type checks"
+uv run pyright
+uv run mypy .
+
+echo "==> Verifying the package imports cleanly"
+uv run python -c 'import orca'

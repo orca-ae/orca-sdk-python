@@ -19,3 +19,4 @@ venv
 
 codegen.log
 .DS_Store
+.remember/
