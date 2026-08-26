@@ -7,6 +7,7 @@ from .._models import BaseModel
 
 __all__ = [
     "ModelEffortType",
+    "SkillSource",
     "ModelEffort",
     "ModelConfigParam",
     "McpServerDefinition",
@@ -24,6 +25,11 @@ __all__ = [
 ]
 
 ModelEffortType: TypeAlias = Literal["low", "medium", "high", "xhigh", "max"]
+
+# Skill source discriminator. These are protocol constants: the server defines them
+# and the SDK must send them verbatim, so the values are fixed by the contract rather
+# than chosen here. Declared once and referenced everywhere the discriminator appears.
+SkillSource: TypeAlias = Literal["anthropic", "custom"]  # wire-value
 
 
 class ModelEffort(BaseModel):
@@ -126,14 +132,8 @@ AgentToolDefinitionParam: TypeAlias = Union[
 
 
 class AgentSkillDefinitionParam(TypedDict, total=False):
-    type: Required[str]
-    """Skill source discriminator.
-
-    Typed as an open string rather than a closed set: the accepted values are defined
-    by the API contract (see `openapi/managed-agents.yaml`), the server validates them,
-    and new sources can appear without an SDK release. The TypeScript client models
-    this shape as open for the same reason.
-    """
+    type: Required[SkillSource]
+    """Where the skill comes from. Values are fixed by the API contract."""
 
     skill_id: Required[str]
 
