@@ -1,8 +1,13 @@
 from __future__ import annotations
 
 import os
-from typing import Any, Mapping
-from typing_extensions import Self, override
+import re
+import asyncio
+import inspect
+import logging
+import threading
+from typing import Any, Union, Mapping, Callable, Awaitable, cast
+from typing_extensions import Self, TypeAlias, override
 
 import httpx2
 
@@ -11,15 +16,36 @@ from ._qs import Querystring
 from ._types import Omit, Timeout, NotGiven, RequestOptions, not_given
 from ._utils import is_given
 from ._compat import cached_property
+from ._models import FinalRequestOptions
 from ._version import __version__
 from ._streaming import Stream as Stream, AsyncStream as AsyncStream
-from ._exceptions import OrcaError, APIStatusError
+from ._exceptions import (
+    OrcaError,
+    NotFoundError,
+    APIStatusError,
+    ExtensionNotAvailableError,
+)
 from ._base_client import (
     DEFAULT_MAX_RETRIES,
     SyncAPIClient,
     AsyncAPIClient,
     merge_headers,
 )
+
+log: logging.Logger = logging.getLogger(__name__)
+
+#: An `api_key` may be a literal token or a callable resolved on every request,
+#: which is how callers plug in short-lived or rotating credentials.
+ApiKeyProvider: TypeAlias = Union[str, Callable[[], str], None]
+AsyncApiKeyProvider: TypeAlias = Union[str, Callable[[], Union[str, Awaitable[str]]], None]
+
+# Deployments used to require one of these suffixes on the base URL. They are no
+# longer part of it -- core is served at the host root -- so strip and warn.
+_LEGACY_BASE_URL_SUFFIX = re.compile(r"(/api/v1|/v1/registry|/v1)$")
+
+#: Extension group serving the `cloud.*` namespace. Single-sourced so the gate
+#: never re-derives the group name from a request path.
+CLOUD_EXTENSION_GROUP = "cloud.sn.io"
 
 __all__ = [
     "Timeout",
@@ -38,21 +64,47 @@ def _resolve_base_url(base_url: str | httpx2.URL | None) -> str | httpx2.URL:
 
     There is no default host: this API is self-hosted, so a missing base URL is a
     configuration error rather than something the SDK can guess at.
+
+    A legacy `/v1`, `/v1/registry`, or `/api/v1` suffix is stripped with a warning.
+    `/api/v1` is stripped **whole** rather than having only its trailing `/v1`
+    removed: leaving `/api` would still resolve core paths through the `/api/v1/*`
+    alias while silently breaking every `/apis/...` extension call -- half the
+    surface broken with nothing to notice.
     """
     if base_url is None:
         base_url = os.environ.get("ORCA_BASE_URL")
     if not base_url:
         raise OrcaError("base_url is required: pass `base_url` to the Orca constructor or set ORCA_BASE_URL")
-    return base_url
+
+    original = str(base_url)
+    url = httpx2.URL(original.rstrip("/"))
+    path = url.path.rstrip("/")
+
+    match = _LEGACY_BASE_URL_SUFFIX.search(path)
+    if match is None:
+        return url
+
+    stripped = url.copy_with(raw_path=path[: -len(match.group(0))].encode())
+    log.warning(
+        'base_url %r ends with "%s", which is no longer part of the base URL -- every '
+        "deployment now serves core at the host root (e.g. GET {base}/v1/agents). "
+        "Using %r instead. Update ORCA_BASE_URL or the `base_url` option to the host "
+        "root; this compatibility shim may be removed in a future major version.",
+        original,
+        match.group(0),
+        str(stripped),
+    )
+    return stripped
 
 
 class Orca(SyncAPIClient):
-    api_key: str | None
+    api_key: ApiKeyProvider
+    _extension_lock: threading.Lock
 
     def __init__(
         self,
         *,
-        api_key: str | None | NotGiven = not_given,
+        api_key: ApiKeyProvider | NotGiven = not_given,
         base_url: str | httpx2.URL | None = None,
         timeout: float | Timeout | None | NotGiven = not_given,
         max_retries: int = DEFAULT_MAX_RETRIES,
@@ -69,6 +121,10 @@ class Orca(SyncAPIClient):
         explicit `None` disables the `Authorization` header entirely, which is useful
         when the deployment sits behind a separately authenticated proxy.
 
+        `api_key` may also be a callable, which is invoked once per request. That is
+        the hook for short-lived or rotating credentials: return the current token and
+        the SDK will pick it up without the client being rebuilt.
+
         `base_url` defaults to the `ORCA_BASE_URL` environment variable and is required.
         It is the **host root** — the SDK writes the `/v1/...` and `/apis/...` prefixes
         itself.
@@ -76,6 +132,8 @@ class Orca(SyncAPIClient):
         if not is_given(api_key):
             api_key = os.environ.get("ORCA_API_KEY") or None
         self.api_key = api_key
+        self._extension_groups: dict[str, frozenset[str]] = {}
+        self._extension_lock = threading.Lock()
 
         super().__init__(
             version=__version__,
@@ -106,7 +164,7 @@ class Orca(SyncAPIClient):
     @property
     @override
     def auth_headers(self) -> dict[str, str]:
-        api_key = self.api_key
+        api_key = _resolve_api_key(self.api_key)
         if api_key is None:
             return {}
         return {"Authorization": f"Bearer {api_key}"}
@@ -122,7 +180,7 @@ class Orca(SyncAPIClient):
     def copy(
         self,
         *,
-        api_key: str | None | NotGiven = not_given,
+        api_key: ApiKeyProvider | NotGiven = not_given,
         base_url: str | httpx2.URL | None = None,
         timeout: float | Timeout | None | NotGiven = not_given,
         http_client: httpx2.Client | None = None,
@@ -168,6 +226,42 @@ class Orca(SyncAPIClient):
     # client.with_options(timeout=10).agents.list(...)
     with_options = copy
 
+    def _ensure_extension_available(self, group: str) -> None:
+        """Raise unless this deployment advertises `group` via `GET /apis`.
+
+        Namespaces served by an extension are gated here rather than being allowed
+        to fail as a 404, so calling one against a deployment that does not serve it
+        produces `ExtensionNotAvailableError` and makes no HTTP request at all.
+
+        The discovery result is cached per base URL, and the lock collapses a burst
+        of concurrent first-calls into a single probe.
+        """
+        base = str(self.base_url)
+        groups = self._extension_groups.get(base)
+        if groups is None:
+            with self._extension_lock:
+                groups = self._extension_groups.get(base)
+                if groups is None:
+                    groups = self._fetch_extension_groups()
+                    self._extension_groups[base] = groups
+
+        if group not in groups:
+            raise ExtensionNotAvailableError(
+                group,
+                f'This deployment does not advertise the "{group}" extension group '
+                f"(GET /apis groups: [{', '.join(sorted(groups))}]). Methods under this "
+                "namespace require a deployment that serves this extension group.",
+            )
+
+    def _fetch_extension_groups(self) -> frozenset[str]:
+        try:
+            response = self.get("/apis", cast_to=httpx2.Response)
+        except NotFoundError:
+            # A deployment predating the discovery route serves no extensions.
+            log.warning("GET /apis is not served by this deployment; treating it as serving no extension groups")
+            return frozenset()
+        return _parse_extension_groups(cast("object", response.json()))
+
     @override
     def _make_status_error(
         self,
@@ -180,12 +274,13 @@ class Orca(SyncAPIClient):
 
 
 class AsyncOrca(AsyncAPIClient):
-    api_key: str | None
+    api_key: AsyncApiKeyProvider
+    _extension_lock: asyncio.Lock | None
 
     def __init__(
         self,
         *,
-        api_key: str | None | NotGiven = not_given,
+        api_key: AsyncApiKeyProvider | NotGiven = not_given,
         base_url: str | httpx2.URL | None = None,
         timeout: float | Timeout | None | NotGiven = not_given,
         max_retries: int = DEFAULT_MAX_RETRIES,
@@ -203,6 +298,8 @@ class AsyncOrca(AsyncAPIClient):
         if not is_given(api_key):
             api_key = os.environ.get("ORCA_API_KEY") or None
         self.api_key = api_key
+        self._extension_groups: dict[str, frozenset[str]] = {}
+        self._extension_lock = None
 
         super().__init__(
             version=__version__,
@@ -231,10 +328,28 @@ class AsyncOrca(AsyncAPIClient):
     @property
     @override
     def auth_headers(self) -> dict[str, str]:
+        # A callable `api_key` may return an awaitable, which this synchronous
+        # property cannot resolve. Literals are handled here; callables are
+        # resolved in `_prepare_options` below, which runs in async context
+        # before the request headers are built.
         api_key = self.api_key
-        if api_key is None:
+        if api_key is None or callable(api_key):
             return {}
         return {"Authorization": f"Bearer {api_key}"}
+
+    @override
+    async def _prepare_options(self, options: FinalRequestOptions) -> FinalRequestOptions:
+        api_key = self.api_key
+        if callable(api_key):
+            resolved = api_key()
+            if inspect.isawaitable(resolved):
+                resolved = await resolved
+            if not resolved or not isinstance(cast("object", resolved), str):
+                raise OrcaError("the `api_key` callable must return a non-empty string")
+            headers = dict(options.headers) if is_given(options.headers) else {}
+            headers.setdefault("Authorization", f"Bearer {resolved}")
+            options.headers = headers
+        return options
 
     @property
     @override
@@ -247,7 +362,7 @@ class AsyncOrca(AsyncAPIClient):
     def copy(
         self,
         *,
-        api_key: str | None | NotGiven = not_given,
+        api_key: AsyncApiKeyProvider | NotGiven = not_given,
         base_url: str | httpx2.URL | None = None,
         timeout: float | Timeout | None | NotGiven = not_given,
         http_client: httpx2.AsyncClient | None = None,
@@ -291,6 +406,40 @@ class AsyncOrca(AsyncAPIClient):
 
     with_options = copy
 
+    async def _ensure_extension_available(self, group: str) -> None:
+        """Async counterpart to `Orca._ensure_extension_available`.
+
+        The lock is created lazily because a client may be constructed outside a
+        running event loop, and binding an asyncio primitive at that point would
+        tie it to the wrong loop.
+        """
+        base = str(self.base_url)
+        groups = self._extension_groups.get(base)
+        if groups is None:
+            if self._extension_lock is None:
+                self._extension_lock = asyncio.Lock()
+            async with self._extension_lock:
+                groups = self._extension_groups.get(base)
+                if groups is None:
+                    groups = await self._fetch_extension_groups()
+                    self._extension_groups[base] = groups
+
+        if group not in groups:
+            raise ExtensionNotAvailableError(
+                group,
+                f'This deployment does not advertise the "{group}" extension group '
+                f"(GET /apis groups: [{', '.join(sorted(groups))}]). Methods under this "
+                "namespace require a deployment that serves this extension group.",
+            )
+
+    async def _fetch_extension_groups(self) -> frozenset[str]:
+        try:
+            response = await self.get("/apis", cast_to=httpx2.Response)
+        except NotFoundError:
+            log.warning("GET /apis is not served by this deployment; treating it as serving no extension groups")
+            return frozenset()
+        return _parse_extension_groups(cast("object", response.json()))
+
     @override
     def _make_status_error(
         self,
@@ -300,6 +449,45 @@ class AsyncOrca(AsyncAPIClient):
         response: httpx2.Response,
     ) -> APIStatusError:
         return _make_status_error(err_msg, body=body, response=response)
+
+
+def _parse_extension_groups(payload: object) -> frozenset[str]:
+    """Extract the advertised group names from a `GET /apis` body.
+
+    An empty or unrecognised body yields an empty set: "no extensions installed" is a
+    valid deployment state, not an error.
+    """
+    if not isinstance(payload, dict):
+        return frozenset()
+    groups = cast("Mapping[str, object]", payload).get("groups")
+    if not isinstance(groups, list):
+        return frozenset()
+
+    names: set[str] = set()
+    for entry in cast("list[object]", groups):
+        if not isinstance(entry, dict):
+            continue
+        name = cast("Mapping[str, object]", entry).get("name")
+        if isinstance(name, str) and name:
+            names.add(name)
+    return frozenset(names)
+
+
+def _resolve_api_key(api_key: object) -> str | None:
+    """Resolve a literal or callable `api_key` down to the token for this request.
+
+    A callable is invoked per request, which is the hook for short-lived or rotating
+    credentials. Returning an empty string is treated as a configuration error rather
+    than silently sending an unauthenticated request.
+    """
+    if api_key is None:
+        return None
+    if callable(api_key):
+        resolved = api_key()
+        if not isinstance(resolved, str) or not resolved:
+            raise OrcaError("the `api_key` callable must return a non-empty string")
+        return resolved
+    return cast("str", api_key)
 
 
 def _make_status_error(err_msg: str, *, body: object, response: httpx2.Response) -> APIStatusError:
