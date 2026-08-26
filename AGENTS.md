@@ -41,6 +41,17 @@ lineage, say "this SDK" or point at a specific local file.
 `./scripts/check-branding` enforces this over every tracked file and runs in CI. `openapi/` is
 exempt because those are generated server artifacts, not our prose.
 
+There is one in-source escape hatch, for **protocol constants only**: a value the server
+defines and the SDK must send verbatim, such as an enum discriminator. Mark that single line
+with `# wire-value` and the gate skips it. The rules:
+
+- Per line, never per file.
+- Only for values fixed by the contract. If we chose the string, it is not a wire value.
+- Declare it once as a named alias and reference that everywhere else, so the literal appears
+  in exactly one place (see `SkillSource` in `types/agent_shared.py`).
+- Every active exemption is printed by the gate on each run, so they stay visible in CI
+  rather than quietly accumulating.
+
 ## 3. Project layout
 
 ```

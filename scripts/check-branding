@@ -15,6 +15,9 @@ TERMS_B64=(
   dmVydGV4
 )
 
+# Lines carrying this marker are protocol constants, exempt by design.
+MARKER="wire-value"
+
 pattern=""
 for t in "${TERMS_B64[@]}"; do
   decoded=$(printf '%s' "$t" | base64 -d)
@@ -25,6 +28,11 @@ done
 # from the server, and the contract legitimately names compatibility headers and
 # provider enum values we neither choose nor send. The rule governs code, comments,
 # docs, examples, and tests -- not a vendored wire contract.
+#
+# A single line may also be exempted with the `wire-value` marker, for a protocol
+# constant the server defines and we must send verbatim. That is the only in-source
+# escape hatch, it is per-line rather than per-file, and every active use is printed
+# below so exemptions stay visible instead of quietly accumulating.
 #
 # git grep exits 0 on match, 1 on no-match, >1 on error. Distinguishing all three
 # means a broken invocation can never be mistaken for a clean result.
@@ -40,6 +48,19 @@ set -e
 if [ "$status" -gt 1 ]; then
   echo "error: branding scan failed to run (git grep exit $status)" >&2
   exit 2
+fi
+
+# Split matches into exempted (carrying the marker) and real violations.
+exempt=$(printf '%s\n' "$matches" | grep -F "$MARKER" || true)
+matches=$(printf '%s\n' "$matches" | grep -Fv "$MARKER" || true)
+if [ -z "$matches" ]; then
+  status=1
+fi
+
+if [ -n "$exempt" ]; then
+  echo "protocol-constant exemptions in force ($(printf '%s\n' "$exempt" | wc -l | tr -d ' ')):"
+  printf '%s\n' "$exempt" | sed 's/^/  /'
+  echo ""
 fi
 
 if [ "$status" -eq 0 ]; then
