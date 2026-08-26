@@ -180,8 +180,8 @@ class TestPackages:
             "v1",
             description="Transform",
             contact="team@example.test",
-            createTime=1700000000000,
-            modificationTime=1700000001000,
+            create_time=1700000000000,
+            modification_time=1700000001000,
             properties={"owner": "core"},
         )
         request = _req(route)

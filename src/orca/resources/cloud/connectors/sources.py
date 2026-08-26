@@ -1,14 +1,11 @@
 from __future__ import annotations
 
-from typing import Mapping, cast
-
 import httpx2
 
 from .._gate import cloud_gate, async_cloud_gate
 from ....types import cloud_connector_source_create_params, cloud_connector_source_update_params
-from ...._files import deepcopy_with_paths
 from ...._types import Body, Omit, Query, Headers, NotGiven, FileTypes, omit, not_given
-from ...._utils import transform, extract_files, path_template, async_transform
+from ...._utils import transform, path_template, async_transform
 from ...._compat import cached_property
 from .._multipart import encode_cloud_multipart
 from ...._resource import SyncAPIResource, AsyncAPIResource
@@ -82,13 +79,15 @@ class SourceConnectors(SyncAPIResource):
         cloud_gate(self)
         if not name:
             raise ValueError(f"Expected a non-empty value for `name` but received {name!r}")
-        body = deepcopy_with_paths(
-            {"data": data, "url": url, "sourceConfig": source_config},
-            paths=[["data"]],
-        )
-        uploads = extract_files(cast(Mapping[str, object], body), paths=[["data"]])
-        fields, json_parts = encode_cloud_multipart(
-            transform(body, cloud_connector_source_create_params.CloudSourceCreateParams)
+        # Transform first, then split: `encode_cloud_multipart` detects the file part
+        # itself, so every part -- upload or JSON document -- is named with the wire
+        # key. Splitting the arguments out beforehand would name the file part after
+        # the Python argument instead, which the server rejects and no checker catches.
+        fields, parts = encode_cloud_multipart(
+            transform(
+                {"data": data, "url": url, "sourceConfig": source_config},
+                cloud_connector_source_create_params.CloudSourceCreateParams,
+            )
         )
         # The Content-Type actually sent carries a `boundary` parameter that httpx
         # fills in, e.g. `multipart/form-data; boundary=---abc--`.
@@ -96,7 +95,7 @@ class SourceConnectors(SyncAPIResource):
         return self._post(
             path_template("/apis/cloud.sn.io/v1/connectors/sources/{name}", name=name),
             body=fields,
-            files=[*uploads, *json_parts],
+            files=parts,
             options=make_request_options(
                 extra_headers=extra_headers, extra_query=extra_query, extra_body=extra_body, timeout=timeout
             ),
@@ -180,24 +179,23 @@ class SourceConnectors(SyncAPIResource):
         cloud_gate(self)
         if not name:
             raise ValueError(f"Expected a non-empty value for `name` but received {name!r}")
-        body = deepcopy_with_paths(
-            {
-                "data": data,
-                "url": url,
-                "sourceConfig": source_config,
-                "updateOptions": update_options,
-            },
-            paths=[["data"]],
-        )
-        uploads = extract_files(cast(Mapping[str, object], body), paths=[["data"]])
-        fields, json_parts = encode_cloud_multipart(
-            transform(body, cloud_connector_source_update_params.CloudSourceUpdateParams)
+        # See `create` on why the split happens after the transform, not before it.
+        fields, parts = encode_cloud_multipart(
+            transform(
+                {
+                    "data": data,
+                    "url": url,
+                    "sourceConfig": source_config,
+                    "updateOptions": update_options,
+                },
+                cloud_connector_source_update_params.CloudSourceUpdateParams,
+            )
         )
         extra_headers = {"Content-Type": "multipart/form-data", **(extra_headers or {})}
         return self._put(
             path_template("/apis/cloud.sn.io/v1/connectors/sources/{name}", name=name),
             body=fields,
-            files=[*uploads, *json_parts],
+            files=parts,
             options=make_request_options(
                 extra_headers=extra_headers, extra_query=extra_query, extra_body=extra_body, timeout=timeout
             ),
@@ -655,13 +653,15 @@ class AsyncSourceConnectors(AsyncAPIResource):
         await async_cloud_gate(self)
         if not name:
             raise ValueError(f"Expected a non-empty value for `name` but received {name!r}")
-        body = deepcopy_with_paths(
-            {"data": data, "url": url, "sourceConfig": source_config},
-            paths=[["data"]],
-        )
-        uploads = extract_files(cast(Mapping[str, object], body), paths=[["data"]])
-        fields, json_parts = encode_cloud_multipart(
-            await async_transform(body, cloud_connector_source_create_params.CloudSourceCreateParams)
+        # Transform first, then split: `encode_cloud_multipart` detects the file part
+        # itself, so every part -- upload or JSON document -- is named with the wire
+        # key. Splitting the arguments out beforehand would name the file part after
+        # the Python argument instead, which the server rejects and no checker catches.
+        fields, parts = encode_cloud_multipart(
+            await async_transform(
+                {"data": data, "url": url, "sourceConfig": source_config},
+                cloud_connector_source_create_params.CloudSourceCreateParams,
+            )
         )
         # The Content-Type actually sent carries a `boundary` parameter that httpx
         # fills in, e.g. `multipart/form-data; boundary=---abc--`.
@@ -669,7 +669,7 @@ class AsyncSourceConnectors(AsyncAPIResource):
         return await self._post(
             path_template("/apis/cloud.sn.io/v1/connectors/sources/{name}", name=name),
             body=fields,
-            files=[*uploads, *json_parts],
+            files=parts,
             options=make_request_options(
                 extra_headers=extra_headers, extra_query=extra_query, extra_body=extra_body, timeout=timeout
             ),
@@ -753,24 +753,23 @@ class AsyncSourceConnectors(AsyncAPIResource):
         await async_cloud_gate(self)
         if not name:
             raise ValueError(f"Expected a non-empty value for `name` but received {name!r}")
-        body = deepcopy_with_paths(
-            {
-                "data": data,
-                "url": url,
-                "sourceConfig": source_config,
-                "updateOptions": update_options,
-            },
-            paths=[["data"]],
-        )
-        uploads = extract_files(cast(Mapping[str, object], body), paths=[["data"]])
-        fields, json_parts = encode_cloud_multipart(
-            await async_transform(body, cloud_connector_source_update_params.CloudSourceUpdateParams)
+        # See `create` on why the split happens after the transform, not before it.
+        fields, parts = encode_cloud_multipart(
+            await async_transform(
+                {
+                    "data": data,
+                    "url": url,
+                    "sourceConfig": source_config,
+                    "updateOptions": update_options,
+                },
+                cloud_connector_source_update_params.CloudSourceUpdateParams,
+            )
         )
         extra_headers = {"Content-Type": "multipart/form-data", **(extra_headers or {})}
         return await self._put(
             path_template("/apis/cloud.sn.io/v1/connectors/sources/{name}", name=name),
             body=fields,
-            files=[*uploads, *json_parts],
+            files=parts,
             options=make_request_options(
                 extra_headers=extra_headers, extra_query=extra_query, extra_body=extra_body, timeout=timeout
             ),

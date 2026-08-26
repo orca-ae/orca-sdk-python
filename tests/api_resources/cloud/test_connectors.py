@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+import re
 from typing import Any, Union, cast
 
 import httpx2
@@ -228,6 +229,29 @@ class TestConnectors:
         route = respx_mock.post(f"{V1}/connectors/{kind}/archive").mock(return_value=httpx2.Response(200, json={}))
         _sync_kind(client, kind).create("archive", data=b"connector-bytes")
         assert b"connector-bytes" in _req(route).content
+
+    @KINDS
+    @parametrize
+    @pytest.mark.respx(base_url=base_url)
+    def test_multipart_part_names_are_wire_names(self, client: Orca, respx_mock: MockRouter, kind: str) -> None:
+        """Every part is named with the wire key, including the file part.
+
+        The file part's name comes from whatever key reaches the encoder, so splitting
+        the arguments out before the transform would name it after the Python argument
+        instead. That failure is silent -- the server rejects the part, but no type
+        checker, linter, or round-trip assertion sees it -- so the names are pinned here.
+        """
+        _gate(respx_mock, client)
+        route = respx_mock.post(f"{V1}/connectors/{kind}/archive").mock(return_value=httpx2.Response(200, json={}))
+        _sync_kind(client, kind).create(
+            "archive",
+            data=b"connector-bytes",
+            url="https://packages.test/archive.nar",
+            **_config_kwarg(kind, CONFIGS[kind]),
+        )
+        # `(?<!file)` matters: `filename="..."` contains `name="..."` as a substring.
+        names = set(re.findall(r'(?<!file)name="([^"]+)"', _req(route).content.decode("utf-8", "replace")))
+        assert names == {"data", "url", "sinkConfig" if kind == "sinks" else "sourceConfig"}
 
     @KINDS
     @parametrize

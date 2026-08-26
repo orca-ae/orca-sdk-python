@@ -82,7 +82,7 @@ class Connections(SyncAPIResource):
         spec: CloudConnectionSpecParam | Omit = omit,
         status: CloudConnectionStatusParam | Omit = omit,
         internal: bool | Omit = omit,
-        clusterRef: str | Omit = omit,
+        cluster_ref: str | Omit = omit,
         extra_headers: Headers | None = None,
         extra_query: Query | None = None,
         extra_body: Body | None = None,
@@ -104,7 +104,7 @@ class Connections(SyncAPIResource):
 
           internal: Marks a connection the platform manages on your behalf.
 
-          clusterRef: The cluster this connection belongs to.
+          cluster_ref: The cluster this connection belongs to. Sent as `clusterRef`.
 
           extra_headers: Send extra headers
 
@@ -123,7 +123,7 @@ class Connections(SyncAPIResource):
                     "spec": spec,
                     "status": status,
                     "internal": internal,
-                    "clusterRef": clusterRef,
+                    "cluster_ref": cluster_ref,
                 },
                 cloud_connection_create_params.CloudConnectionCreateParams,
             ),
@@ -175,7 +175,7 @@ class Connections(SyncAPIResource):
         spec: CloudConnectionSpecParam | Omit = omit,
         status: CloudConnectionStatusParam | Omit = omit,
         internal: bool | Omit = omit,
-        clusterRef: str | Omit = omit,
+        cluster_ref: str | Omit = omit,
         extra_headers: Headers | None = None,
         extra_query: Query | None = None,
         extra_body: Body | None = None,
@@ -202,7 +202,7 @@ class Connections(SyncAPIResource):
 
           internal: Marks a connection the platform manages on your behalf.
 
-          clusterRef: The cluster this connection belongs to.
+          cluster_ref: The cluster this connection belongs to. Sent as `clusterRef`.
 
           extra_headers: Send extra headers
 
@@ -223,7 +223,7 @@ class Connections(SyncAPIResource):
                     "spec": spec,
                     "status": status,
                     "internal": internal,
-                    "clusterRef": clusterRef,
+                    "cluster_ref": cluster_ref,
                 },
                 cloud_connection_update_params.CloudConnectionUpdateParams,
             ),
@@ -315,7 +315,7 @@ class Connections(SyncAPIResource):
         spec: CloudConnectionSpecParam | Omit = omit,
         status: CloudConnectionStatusParam | Omit = omit,
         internal: bool | Omit = omit,
-        clusterRef: str | Omit = omit,
+        cluster_ref: str | Omit = omit,
         extra_headers: Headers | None = None,
         extra_query: Query | None = None,
         extra_body: Body | None = None,
@@ -337,7 +337,7 @@ class Connections(SyncAPIResource):
 
           internal: Marks a connection the platform manages on your behalf.
 
-          clusterRef: The cluster this connection would belong to.
+          cluster_ref: The cluster this connection would belong to. Sent as `clusterRef`.
 
           extra_headers: Send extra headers
 
@@ -356,7 +356,7 @@ class Connections(SyncAPIResource):
                     "spec": spec,
                     "status": status,
                     "internal": internal,
-                    "clusterRef": clusterRef,
+                    "cluster_ref": cluster_ref,
                 },
                 cloud_connection_validate_params.CloudConnectionValidateParams,
             ),
@@ -414,7 +414,7 @@ class AsyncConnections(AsyncAPIResource):
         spec: CloudConnectionSpecParam | Omit = omit,
         status: CloudConnectionStatusParam | Omit = omit,
         internal: bool | Omit = omit,
-        clusterRef: str | Omit = omit,
+        cluster_ref: str | Omit = omit,
         extra_headers: Headers | None = None,
         extra_query: Query | None = None,
         extra_body: Body | None = None,
@@ -436,7 +436,7 @@ class AsyncConnections(AsyncAPIResource):
 
           internal: Marks a connection the platform manages on your behalf.
 
-          clusterRef: The cluster this connection belongs to.
+          cluster_ref: The cluster this connection belongs to. Sent as `clusterRef`.
 
           extra_headers: Send extra headers
 
@@ -455,7 +455,7 @@ class AsyncConnections(AsyncAPIResource):
                     "spec": spec,
                     "status": status,
                     "internal": internal,
-                    "clusterRef": clusterRef,
+                    "cluster_ref": cluster_ref,
                 },
                 cloud_connection_create_params.CloudConnectionCreateParams,
             ),
@@ -507,7 +507,7 @@ class AsyncConnections(AsyncAPIResource):
         spec: CloudConnectionSpecParam | Omit = omit,
         status: CloudConnectionStatusParam | Omit = omit,
         internal: bool | Omit = omit,
-        clusterRef: str | Omit = omit,
+        cluster_ref: str | Omit = omit,
         extra_headers: Headers | None = None,
         extra_query: Query | None = None,
         extra_body: Body | None = None,
@@ -534,7 +534,7 @@ class AsyncConnections(AsyncAPIResource):
 
           internal: Marks a connection the platform manages on your behalf.
 
-          clusterRef: The cluster this connection belongs to.
+          cluster_ref: The cluster this connection belongs to. Sent as `clusterRef`.
 
           extra_headers: Send extra headers
 
@@ -555,7 +555,7 @@ class AsyncConnections(AsyncAPIResource):
                     "spec": spec,
                     "status": status,
                     "internal": internal,
-                    "clusterRef": clusterRef,
+                    "cluster_ref": cluster_ref,
                 },
                 cloud_connection_update_params.CloudConnectionUpdateParams,
             ),
@@ -647,7 +647,7 @@ class AsyncConnections(AsyncAPIResource):
         spec: CloudConnectionSpecParam | Omit = omit,
         status: CloudConnectionStatusParam | Omit = omit,
         internal: bool | Omit = omit,
-        clusterRef: str | Omit = omit,
+        cluster_ref: str | Omit = omit,
         extra_headers: Headers | None = None,
         extra_query: Query | None = None,
         extra_body: Body | None = None,
@@ -669,7 +669,7 @@ class AsyncConnections(AsyncAPIResource):
 
           internal: Marks a connection the platform manages on your behalf.
 
-          clusterRef: The cluster this connection would belong to.
+          cluster_ref: The cluster this connection would belong to. Sent as `clusterRef`.
 
           extra_headers: Send extra headers
 
@@ -688,7 +688,7 @@ class AsyncConnections(AsyncAPIResource):
                     "spec": spec,
                     "status": status,
                     "internal": internal,
-                    "clusterRef": clusterRef,
+                    "cluster_ref": cluster_ref,
                 },
                 cloud_connection_validate_params.CloudConnectionValidateParams,
             ),

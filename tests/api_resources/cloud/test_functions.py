@@ -124,7 +124,7 @@ class TestFunctions:
             "transform",
             data=b"jar-bytes",
             url="function://transform@latest",
-            functionConfig={"parallelism": 2, "inputs": ["in"]},
+            function_config={"parallelism": 2, "inputs": ["in"]},
         )
         request = _req(route)
         assert request.method == "POST"
@@ -175,8 +175,8 @@ class TestFunctions:
         )
         client.cloud.functions.update(
             "transform",
-            functionConfig={"parallelism": 4},
-            updateOptions={"update_auth_data": True},
+            function_config={"parallelism": 4},
+            update_options={"update_auth_data": True},
         )
         request = _req(route)
         assert request.method == "PUT"
@@ -342,13 +342,71 @@ class TestFunctions:
     @parametrize
     @pytest.mark.respx(base_url=base_url)
     def test_method_trigger_with_stream(self, client: Orca, respx_mock: MockRouter) -> None:
+        """A file part is named for the wire field, not for the Python argument.
+
+        `data_stream` is the argument; `dataStream` is the part. These only agree
+        if the body is aliased *before* it is split into parts -- pulling files out
+        of the pre-transform mapping would name this part `data_stream` and the
+        server would not recognise it.
+        """
         _gate(respx_mock, client)
         route = respx_mock.post("/apis/cloud.sn.io/v1/functions/transform:trigger").mock(
             return_value=httpx2.Response(200, text="ok", headers={"content-type": "application/json"})
         )
-        client.cloud.functions.trigger("transform", dataStream=(b"payload"), topic="in")
+        client.cloud.functions.trigger("transform", data_stream=b"payload", topic="in")
         parts = _parts(_req(route))
+        assert set(parts) == {"dataStream", "topic"}
         assert parts["dataStream"].get_payload(decode=True) == b"payload"
+
+    @pytest.mark.parametrize(
+        ("call", "expected"),
+        [
+            ("create", ["url", "data", "functionConfig"]),
+            ("update", ["data", "functionConfig", "updateOptions"]),
+            ("update_state", ["state"]),
+            ("trigger", ["data", "topic", "dataStream"]),
+        ],
+    )
+    @parametrize
+    @pytest.mark.respx(base_url=base_url)
+    def test_multipart_part_names_are_wire_spellings(
+        self, client: Orca, respx_mock: MockRouter, call: str, expected: list[str]
+    ) -> None:
+        """Argument names are snake_case; part names are the contract's camelCase.
+
+        These are deliberately decoupled: the methods take `function_config`,
+        `update_options`, `data_stream`, and the alias on each params TypedDict
+        rewrites them before the body is split into parts. A part named
+        `function_config` would be accepted by every checker here and rejected by
+        the server, so this pins the encoded names rather than the kwargs.
+        """
+        _gate(respx_mock, client)
+        routes = {
+            "create": ("post", "/apis/cloud.sn.io/v1/functions/transform"),
+            "update": ("put", "/apis/cloud.sn.io/v1/functions/transform"),
+            "update_state": ("post", "/apis/cloud.sn.io/v1/functions/transform/state/offset"),
+            "trigger": ("post", "/apis/cloud.sn.io/v1/functions/transform:trigger"),
+        }
+        verb, path = routes[call]
+        route = getattr(respx_mock, verb)(path).mock(
+            return_value=httpx2.Response(200, text="{}", headers={"content-type": "application/json"})
+        )
+        invocations = {
+            "create": lambda: client.cloud.functions.create(
+                "transform", data=b"jar", url="u", function_config={"parallelism": 2}
+            ),
+            "update": lambda: client.cloud.functions.update(
+                "transform", data=b"jar", function_config={"parallelism": 4}, update_options={"update_auth_data": True}
+            ),
+            "update_state": lambda: client.cloud.functions.update_state(
+                "transform", "offset", state={"numberValue": 10}
+            ),
+            "trigger": lambda: client.cloud.functions.trigger(
+                "transform", data="hi", data_stream=b"payload", topic="in"
+            ),
+        }
+        invocations[call]()
+        assert sorted(_parts(_req(route))) == sorted(expected)
 
     @parametrize
     @pytest.mark.respx(base_url=base_url)
@@ -408,7 +466,7 @@ class TestAsyncFunctions:
         route = respx_mock.post("/apis/cloud.sn.io/v1/functions/transform").mock(
             return_value=httpx2.Response(200, json={})
         )
-        await async_client.cloud.functions.create("transform", data=b"jar-bytes", functionConfig={"parallelism": 2})
+        await async_client.cloud.functions.create("transform", data=b"jar-bytes", function_config={"parallelism": 2})
         parts = _parts(_req(route))
         assert parts["functionConfig"].get_filename() == "functionConfig.json"
         assert parts["data"].get_payload(decode=True) == b"jar-bytes"
@@ -430,7 +488,7 @@ class TestAsyncFunctions:
         route = respx_mock.put("/apis/cloud.sn.io/v1/functions/transform").mock(
             return_value=httpx2.Response(200, json={})
         )
-        await async_client.cloud.functions.update("transform", updateOptions={"update_auth_data": False})
+        await async_client.cloud.functions.update("transform", update_options={"update_auth_data": False})
         parts = _parts(_req(route))
         assert json.loads(cast(bytes, parts["updateOptions"].get_payload(decode=True))) == {"update-auth-data": False}
 

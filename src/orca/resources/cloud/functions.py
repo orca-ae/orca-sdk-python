@@ -11,7 +11,7 @@ server unescaped.
 
 from __future__ import annotations
 
-from typing import Any, List, Mapping, cast
+from typing import Any, List, cast
 
 import httpx2
 
@@ -22,9 +22,8 @@ from ...types import (
     cloud_function_trigger_params,
     cloud_function_update_state_params,
 )
-from ..._files import deepcopy_with_paths
 from ..._types import Body, Omit, Query, Headers, NotGiven, FileTypes, omit, not_given
-from ..._utils import transform, extract_files, path_template, async_transform
+from ..._utils import transform, path_template, async_transform
 from ..._compat import cached_property
 from ._multipart import encode_cloud_multipart
 from ..._resource import SyncAPIResource, AsyncAPIResource
@@ -59,7 +58,7 @@ class Functions(SyncAPIResource):
         *,
         data: FileTypes | Omit = omit,
         url: str | Omit = omit,
-        functionConfig: CloudFunctionConfigParam | Omit = omit,
+        function_config: CloudFunctionConfigParam | Omit = omit,
         # Use the following arguments if you need to pass additional parameters to the API that aren't available via kwargs.
         # The extra values given here take precedence over values defined on the client or passed to this method.
         extra_headers: Headers | None = None,
@@ -82,7 +81,7 @@ class Functions(SyncAPIResource):
 
           url: A location the server fetches the archive from instead of `data`.
 
-          functionConfig: The function's configuration document.
+          function_config: The function's configuration document. Sent as `functionConfig`.
 
           extra_headers: Send extra headers
 
@@ -95,13 +94,14 @@ class Functions(SyncAPIResource):
         cloud_gate(self)
         if not function_name:
             raise ValueError(f"Expected a non-empty value for `function_name` but received {function_name!r}")
-        body = deepcopy_with_paths(
-            {"data": data, "url": url, "functionConfig": functionConfig},
-            paths=[["data"]],
-        )
-        uploads = extract_files(cast(Mapping[str, object], body), paths=[["data"]])
-        fields, json_parts = encode_cloud_multipart(
-            transform(body, cloud_function_create_params.CloudFunctionCreateParams)
+        # `transform` is load-bearing, not cosmetic: it rewrites these snake_case
+        # argument keys into their wire spellings, and the encoder names each part
+        # after the key it receives.
+        fields, parts = encode_cloud_multipart(
+            transform(
+                {"data": data, "url": url, "function_config": function_config},
+                cloud_function_create_params.CloudFunctionCreateParams,
+            )
         )
         # The Content-Type actually sent carries a `boundary` parameter that httpx
         # fills in, e.g. `multipart/form-data; boundary=---abc--`.
@@ -109,7 +109,7 @@ class Functions(SyncAPIResource):
         return self._post(
             path_template("/apis/cloud.sn.io/v1/functions/{function_name}", function_name=function_name),
             body=fields,
-            files=[*uploads, *json_parts],
+            files=parts,
             options=make_request_options(
                 extra_headers=extra_headers, extra_query=extra_query, extra_body=extra_body, timeout=timeout
             ),
@@ -156,8 +156,8 @@ class Functions(SyncAPIResource):
         *,
         data: FileTypes | Omit = omit,
         url: str | Omit = omit,
-        functionConfig: CloudFunctionConfigParam | Omit = omit,
-        updateOptions: CloudRuntimeUpdateOptionsParam | Omit = omit,
+        function_config: CloudFunctionConfigParam | Omit = omit,
+        update_options: CloudRuntimeUpdateOptionsParam | Omit = omit,
         extra_headers: Headers | None = None,
         extra_query: Query | None = None,
         extra_body: Body | None = None,
@@ -177,9 +177,10 @@ class Functions(SyncAPIResource):
 
           url: A location the server fetches the replacement archive from instead of `data`.
 
-          functionConfig: The configuration to apply.
+          function_config: The configuration to apply. Sent as `functionConfig`.
 
-          updateOptions: Controls applied to the update itself, such as whether stored auth data is refreshed.
+          update_options: Controls applied to the update itself, such as whether stored auth data is
+              refreshed. Sent as `updateOptions`.
 
           extra_headers: Send extra headers
 
@@ -192,13 +193,14 @@ class Functions(SyncAPIResource):
         cloud_gate(self)
         if not function_name:
             raise ValueError(f"Expected a non-empty value for `function_name` but received {function_name!r}")
-        body = deepcopy_with_paths(
-            {"data": data, "url": url, "functionConfig": functionConfig, "updateOptions": updateOptions},
-            paths=[["data"]],
-        )
-        uploads = extract_files(cast(Mapping[str, object], body), paths=[["data"]])
-        fields, json_parts = encode_cloud_multipart(
-            transform(body, cloud_function_update_params.CloudFunctionUpdateParams)
+        # `transform` is load-bearing, not cosmetic: it rewrites these snake_case
+        # argument keys into their wire spellings, and the encoder names each part
+        # after the key it receives.
+        fields, parts = encode_cloud_multipart(
+            transform(
+                {"data": data, "url": url, "function_config": function_config, "update_options": update_options},
+                cloud_function_update_params.CloudFunctionUpdateParams,
+            )
         )
         # The Content-Type actually sent carries a `boundary` parameter that httpx
         # fills in, e.g. `multipart/form-data; boundary=---abc--`.
@@ -206,7 +208,7 @@ class Functions(SyncAPIResource):
         return self._put(
             path_template("/apis/cloud.sn.io/v1/functions/{function_name}", function_name=function_name),
             body=fields,
-            files=[*uploads, *json_parts],
+            files=parts,
             options=make_request_options(
                 extra_headers=extra_headers, extra_query=extra_query, extra_body=extra_body, timeout=timeout
             ),
@@ -415,10 +417,11 @@ class Functions(SyncAPIResource):
             raise ValueError(f"Expected a non-empty value for `function_name` but received {function_name!r}")
         if not key:
             raise ValueError(f"Expected a non-empty value for `key` but received {key!r}")
-        body = {"state": state}
-        uploads: list[tuple[str, FileTypes]] = []
-        fields, json_parts = encode_cloud_multipart(
-            transform(body, cloud_function_update_state_params.CloudFunctionUpdateStateParams)
+        # `transform` is load-bearing, not cosmetic: it rewrites these snake_case
+        # argument keys into their wire spellings, and the encoder names each part
+        # after the key it receives.
+        fields, parts = encode_cloud_multipart(
+            transform({"state": state}, cloud_function_update_state_params.CloudFunctionUpdateStateParams)
         )
         # The Content-Type actually sent carries a `boundary` parameter that httpx
         # fills in, e.g. `multipart/form-data; boundary=---abc--`.
@@ -428,7 +431,7 @@ class Functions(SyncAPIResource):
                 "/apis/cloud.sn.io/v1/functions/{function_name}/state/{key}", function_name=function_name, key=key
             ),
             body=fields,
-            files=[*uploads, *json_parts],
+            files=parts,
             options=make_request_options(
                 extra_headers=extra_headers, extra_query=extra_query, extra_body=extra_body, timeout=timeout
             ),
@@ -788,7 +791,7 @@ class Functions(SyncAPIResource):
         function_name: str,
         *,
         data: str | Omit = omit,
-        dataStream: FileTypes | Omit = omit,
+        data_stream: FileTypes | Omit = omit,
         topic: str | Omit = omit,
         extra_headers: Headers | None = None,
         extra_query: Query | None = None,
@@ -808,7 +811,7 @@ class Functions(SyncAPIResource):
 
           data: Inline input. Unlike the create/update `data` part, this one is text.
 
-          dataStream: Input read from a file or stream instead of `data`.
+          data_stream: Input read from a file or stream instead of `data`. Sent as `dataStream`.
 
           topic: The input topic to publish the trigger message to.
 
@@ -823,13 +826,14 @@ class Functions(SyncAPIResource):
         cloud_gate(self)
         if not function_name:
             raise ValueError(f"Expected a non-empty value for `function_name` but received {function_name!r}")
-        body = deepcopy_with_paths(
-            {"data": data, "dataStream": dataStream, "topic": topic},
-            paths=[["dataStream"]],
-        )
-        uploads = extract_files(cast(Mapping[str, object], body), paths=[["dataStream"]])
-        fields, json_parts = encode_cloud_multipart(
-            transform(body, cloud_function_trigger_params.CloudFunctionTriggerParams)
+        # `transform` is load-bearing, not cosmetic: it rewrites these snake_case
+        # argument keys into their wire spellings, and the encoder names each part
+        # after the key it receives.
+        fields, parts = encode_cloud_multipart(
+            transform(
+                {"data": data, "data_stream": data_stream, "topic": topic},
+                cloud_function_trigger_params.CloudFunctionTriggerParams,
+            )
         )
         # The Content-Type actually sent carries a `boundary` parameter that httpx
         # fills in, e.g. `multipart/form-data; boundary=---abc--`.
@@ -837,7 +841,7 @@ class Functions(SyncAPIResource):
         return self._post(
             path_template("/apis/cloud.sn.io/v1/functions/{function_name}:trigger", function_name=function_name),
             body=fields,
-            files=[*uploads, *json_parts],
+            files=parts,
             options=make_request_options(
                 extra_headers=extra_headers, extra_query=extra_query, extra_body=extra_body, timeout=timeout
             ),
@@ -860,7 +864,7 @@ class AsyncFunctions(AsyncAPIResource):
         *,
         data: FileTypes | Omit = omit,
         url: str | Omit = omit,
-        functionConfig: CloudFunctionConfigParam | Omit = omit,
+        function_config: CloudFunctionConfigParam | Omit = omit,
         # Use the following arguments if you need to pass additional parameters to the API that aren't available via kwargs.
         # The extra values given here take precedence over values defined on the client or passed to this method.
         extra_headers: Headers | None = None,
@@ -883,7 +887,7 @@ class AsyncFunctions(AsyncAPIResource):
 
           url: A location the server fetches the archive from instead of `data`.
 
-          functionConfig: The function's configuration document.
+          function_config: The function's configuration document. Sent as `functionConfig`.
 
           extra_headers: Send extra headers
 
@@ -896,13 +900,14 @@ class AsyncFunctions(AsyncAPIResource):
         await async_cloud_gate(self)
         if not function_name:
             raise ValueError(f"Expected a non-empty value for `function_name` but received {function_name!r}")
-        body = deepcopy_with_paths(
-            {"data": data, "url": url, "functionConfig": functionConfig},
-            paths=[["data"]],
-        )
-        uploads = extract_files(cast(Mapping[str, object], body), paths=[["data"]])
-        fields, json_parts = encode_cloud_multipart(
-            await async_transform(body, cloud_function_create_params.CloudFunctionCreateParams)
+        # `transform` is load-bearing, not cosmetic: it rewrites these snake_case
+        # argument keys into their wire spellings, and the encoder names each part
+        # after the key it receives.
+        fields, parts = encode_cloud_multipart(
+            await async_transform(
+                {"data": data, "url": url, "function_config": function_config},
+                cloud_function_create_params.CloudFunctionCreateParams,
+            )
         )
         # The Content-Type actually sent carries a `boundary` parameter that httpx
         # fills in, e.g. `multipart/form-data; boundary=---abc--`.
@@ -910,7 +915,7 @@ class AsyncFunctions(AsyncAPIResource):
         return await self._post(
             path_template("/apis/cloud.sn.io/v1/functions/{function_name}", function_name=function_name),
             body=fields,
-            files=[*uploads, *json_parts],
+            files=parts,
             options=make_request_options(
                 extra_headers=extra_headers, extra_query=extra_query, extra_body=extra_body, timeout=timeout
             ),
@@ -957,8 +962,8 @@ class AsyncFunctions(AsyncAPIResource):
         *,
         data: FileTypes | Omit = omit,
         url: str | Omit = omit,
-        functionConfig: CloudFunctionConfigParam | Omit = omit,
-        updateOptions: CloudRuntimeUpdateOptionsParam | Omit = omit,
+        function_config: CloudFunctionConfigParam | Omit = omit,
+        update_options: CloudRuntimeUpdateOptionsParam | Omit = omit,
         extra_headers: Headers | None = None,
         extra_query: Query | None = None,
         extra_body: Body | None = None,
@@ -978,9 +983,10 @@ class AsyncFunctions(AsyncAPIResource):
 
           url: A location the server fetches the replacement archive from instead of `data`.
 
-          functionConfig: The configuration to apply.
+          function_config: The configuration to apply. Sent as `functionConfig`.
 
-          updateOptions: Controls applied to the update itself, such as whether stored auth data is refreshed.
+          update_options: Controls applied to the update itself, such as whether stored auth data is
+              refreshed. Sent as `updateOptions`.
 
           extra_headers: Send extra headers
 
@@ -993,13 +999,14 @@ class AsyncFunctions(AsyncAPIResource):
         await async_cloud_gate(self)
         if not function_name:
             raise ValueError(f"Expected a non-empty value for `function_name` but received {function_name!r}")
-        body = deepcopy_with_paths(
-            {"data": data, "url": url, "functionConfig": functionConfig, "updateOptions": updateOptions},
-            paths=[["data"]],
-        )
-        uploads = extract_files(cast(Mapping[str, object], body), paths=[["data"]])
-        fields, json_parts = encode_cloud_multipart(
-            await async_transform(body, cloud_function_update_params.CloudFunctionUpdateParams)
+        # `transform` is load-bearing, not cosmetic: it rewrites these snake_case
+        # argument keys into their wire spellings, and the encoder names each part
+        # after the key it receives.
+        fields, parts = encode_cloud_multipart(
+            await async_transform(
+                {"data": data, "url": url, "function_config": function_config, "update_options": update_options},
+                cloud_function_update_params.CloudFunctionUpdateParams,
+            )
         )
         # The Content-Type actually sent carries a `boundary` parameter that httpx
         # fills in, e.g. `multipart/form-data; boundary=---abc--`.
@@ -1007,7 +1014,7 @@ class AsyncFunctions(AsyncAPIResource):
         return await self._put(
             path_template("/apis/cloud.sn.io/v1/functions/{function_name}", function_name=function_name),
             body=fields,
-            files=[*uploads, *json_parts],
+            files=parts,
             options=make_request_options(
                 extra_headers=extra_headers, extra_query=extra_query, extra_body=extra_body, timeout=timeout
             ),
@@ -1216,10 +1223,11 @@ class AsyncFunctions(AsyncAPIResource):
             raise ValueError(f"Expected a non-empty value for `function_name` but received {function_name!r}")
         if not key:
             raise ValueError(f"Expected a non-empty value for `key` but received {key!r}")
-        body = {"state": state}
-        uploads: list[tuple[str, FileTypes]] = []
-        fields, json_parts = encode_cloud_multipart(
-            await async_transform(body, cloud_function_update_state_params.CloudFunctionUpdateStateParams)
+        # `transform` is load-bearing, not cosmetic: it rewrites these snake_case
+        # argument keys into their wire spellings, and the encoder names each part
+        # after the key it receives.
+        fields, parts = encode_cloud_multipart(
+            await async_transform({"state": state}, cloud_function_update_state_params.CloudFunctionUpdateStateParams)
         )
         # The Content-Type actually sent carries a `boundary` parameter that httpx
         # fills in, e.g. `multipart/form-data; boundary=---abc--`.
@@ -1229,7 +1237,7 @@ class AsyncFunctions(AsyncAPIResource):
                 "/apis/cloud.sn.io/v1/functions/{function_name}/state/{key}", function_name=function_name, key=key
             ),
             body=fields,
-            files=[*uploads, *json_parts],
+            files=parts,
             options=make_request_options(
                 extra_headers=extra_headers, extra_query=extra_query, extra_body=extra_body, timeout=timeout
             ),
@@ -1589,7 +1597,7 @@ class AsyncFunctions(AsyncAPIResource):
         function_name: str,
         *,
         data: str | Omit = omit,
-        dataStream: FileTypes | Omit = omit,
+        data_stream: FileTypes | Omit = omit,
         topic: str | Omit = omit,
         extra_headers: Headers | None = None,
         extra_query: Query | None = None,
@@ -1609,7 +1617,7 @@ class AsyncFunctions(AsyncAPIResource):
 
           data: Inline input. Unlike the create/update `data` part, this one is text.
 
-          dataStream: Input read from a file or stream instead of `data`.
+          data_stream: Input read from a file or stream instead of `data`. Sent as `dataStream`.
 
           topic: The input topic to publish the trigger message to.
 
@@ -1624,13 +1632,14 @@ class AsyncFunctions(AsyncAPIResource):
         await async_cloud_gate(self)
         if not function_name:
             raise ValueError(f"Expected a non-empty value for `function_name` but received {function_name!r}")
-        body = deepcopy_with_paths(
-            {"data": data, "dataStream": dataStream, "topic": topic},
-            paths=[["dataStream"]],
-        )
-        uploads = extract_files(cast(Mapping[str, object], body), paths=[["dataStream"]])
-        fields, json_parts = encode_cloud_multipart(
-            await async_transform(body, cloud_function_trigger_params.CloudFunctionTriggerParams)
+        # `transform` is load-bearing, not cosmetic: it rewrites these snake_case
+        # argument keys into their wire spellings, and the encoder names each part
+        # after the key it receives.
+        fields, parts = encode_cloud_multipart(
+            await async_transform(
+                {"data": data, "data_stream": data_stream, "topic": topic},
+                cloud_function_trigger_params.CloudFunctionTriggerParams,
+            )
         )
         # The Content-Type actually sent carries a `boundary` parameter that httpx
         # fills in, e.g. `multipart/form-data; boundary=---abc--`.
@@ -1638,7 +1647,7 @@ class AsyncFunctions(AsyncAPIResource):
         return await self._post(
             path_template("/apis/cloud.sn.io/v1/functions/{function_name}:trigger", function_name=function_name),
             body=fields,
-            files=[*uploads, *json_parts],
+            files=parts,
             options=make_request_options(
                 extra_headers=extra_headers, extra_query=extra_query, extra_body=extra_body, timeout=timeout
             ),
