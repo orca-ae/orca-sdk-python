@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+set -euo pipefail
+cd "$(dirname "$0")/.."
+
+# The suite is fully hermetic: every HTTP interaction is served by respx, so
+# there is no mock server to start and no network access required.
+uv run pytest "$@"
