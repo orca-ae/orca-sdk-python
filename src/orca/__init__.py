@@ -1,6 +1,7 @@
 from ._types import NOT_GIVEN, Omit, NoneType, NotGiven, omit, not_given
 from ._utils import file_from_path
 from ._client import (
+    CLOUD_EXTENSION_GROUP,
     Orca,
     Client,
     Stream,
@@ -77,6 +78,7 @@ __all__ = [
     "DEFAULT_CONNECTION_LIMITS",
     "DefaultHttpxClient",
     "DefaultAsyncHttpxClient",
+    "CLOUD_EXTENSION_GROUP",
 ]
 
 _setup_logging()
