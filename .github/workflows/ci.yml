@@ -1,8 +1,9 @@
 name: CI
 
 on:
+  # No base-branch filter: PRs in a stack target the branch below them, not `main`,
+  # and a filtered trigger would silently give those PRs no checks at all.
   pull_request:
-    branches: [main]
   push:
     branches: [main]
 
