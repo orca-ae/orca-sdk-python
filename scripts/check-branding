@@ -1,0 +1,53 @@
+#!/usr/bin/env bash
+# Fails if any upstream vendor / third-party-SDK identifier appears in the repo.
+#
+# Uses `git grep`, so it scans exactly the files git tracks and cannot drift from
+# what we ship. Search terms are base64-encoded so this file does not itself trip
+# the check; decode one with: printf '%s' <term> | base64 -d
+set -euo pipefail
+cd "$(dirname "$0")/.."
+
+TERMS_B64=(
+  YW50aHJvcGlj
+  c3RhaW5sZXNz
+  Y2xhdWRl
+  YmVkcm9jaw==
+  dmVydGV4
+)
+
+pattern=""
+for t in "${TERMS_B64[@]}"; do
+  decoded=$(printf '%s' "$t" | base64 -d)
+  pattern="${pattern:+$pattern|}$decoded"
+done
+
+# `openapi/` is excluded: those files are generated artifacts vendored byte-for-byte
+# from the server, and the contract legitimately names compatibility headers and
+# provider enum values we neither choose nor send. The rule governs code, comments,
+# docs, examples, and tests -- not a vendored wire contract.
+#
+# git grep exits 0 on match, 1 on no-match, >1 on error. Distinguishing all three
+# means a broken invocation can never be mistaken for a clean result.
+set +e
+matches=$(git grep -nIiE "$pattern" -- \
+  ':!openapi/' \
+  ':!scripts/check-branding' \
+  ':!uv.lock' \
+  ':!requirements-dev.lock')
+status=$?
+set -e
+
+if [ "$status" -gt 1 ]; then
+  echo "error: branding scan failed to run (git grep exit $status)" >&2
+  exit 2
+fi
+
+if [ "$status" -eq 0 ]; then
+  echo "$matches"
+  echo ""
+  echo "error: upstream vendor identifiers found (see matches above)." >&2
+  echo "This SDK must not reference any upstream vendor, product, or third-party SDK." >&2
+  exit 1
+fi
+
+echo "branding check passed: no upstream vendor identifiers in tracked files"

@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+set -euo pipefail
+cd "$(dirname "$0")/.."
+
+uv python install
+uv sync --all-groups
+uv export -o requirements-dev.lock --no-hashes --all-groups
