@@ -4,9 +4,24 @@ Python client for the [Orca Agent Engine](https://github.com/orca-ae/orca-manage
 
 ## Installation
 
+Releases are published as assets on this repository's [GitHub
+Releases](https://github.com/orca-ae/orca-sdk-python/releases). The repository is
+internal, so installing needs a GitHub token with `contents: read` — the `gh` CLI
+supplies one once you are logged in:
+
 ```sh
-pip install orca-sdk
+gh release download v0.1.0 --repo orca-ae/orca-sdk-python --pattern '*.whl'
+uv pip install ./orca_sdk-0.1.0-py3-none-any.whl
 ```
+
+To pin the SDK in a project, install straight from the tag instead:
+
+```sh
+uv pip install "orca-sdk @ git+ssh://git@github.com/orca-ae/orca-sdk-python@v0.1.0"
+```
+
+> **Note:** do not run `pip install orca-sdk` — that name belongs to an unrelated
+> package on public PyPI.
 
 ## Usage
 

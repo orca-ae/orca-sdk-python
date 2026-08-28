@@ -1,0 +1,84 @@
+name: Create releases
+
+on:
+  schedule:
+    - cron: '0 5 * * *' # every day at 5am UTC
+  push:
+    branches:
+      - main
+
+concurrency:
+  group: create-releases
+  cancel-in-progress: false
+
+jobs:
+  release:
+    name: release
+    # Guard against forks: a fork inherits the workflow but must never cut a release.
+    if: github.repository == 'orca-ae/orca-sdk-python'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+
+    steps:
+      - uses: googleapis/release-please-action@v4
+        id: release
+        with:
+          # A PR opened by GITHUB_TOKEN does not trigger workflow runs, so the Release
+          # PR would get no CI. SNBOT_GITHUB_TOKEN avoids that; the fallback keeps the
+          # workflow functional (without CI on the PR) if the secret is absent.
+          token: ${{ secrets.SNBOT_GITHUB_TOKEN || secrets.GITHUB_TOKEN }}
+          config-file: release-please-config.json
+          manifest-file: .release-please-manifest.json
+
+      # `uv.lock` records the project's own version in its root package entry, and
+      # release-please only knows about pyproject.toml. Without this the lock trails the
+      # bump by one version and `uv lock --check` in ./scripts/lint fails the Release PR.
+      - name: Check out the Release PR branch
+        if: ${{ steps.release.outputs.pr }}
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ fromJSON(steps.release.outputs.pr).headBranchName }}
+          token: ${{ secrets.SNBOT_GITHUB_TOKEN || secrets.GITHUB_TOKEN }}
+
+      - name: Install uv
+        if: ${{ steps.release.outputs.pr }}
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
+      - name: Refresh uv.lock on the Release PR
+        if: ${{ steps.release.outputs.pr }}
+        run: |
+          uv lock
+          if git diff --quiet -- uv.lock; then
+            echo "uv.lock is already in step with pyproject.toml"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add uv.lock
+          git commit -m "chore: sync uv.lock with the release version"
+          git push
+
+      # Build from the tag release-please just created, never from whatever `main`
+      # happens to be by the time this step runs.
+      - name: Check out the release tag
+        if: ${{ steps.release.outputs.release_created }}
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ steps.release.outputs.tag_name }}
+
+      - name: Install uv
+        if: ${{ steps.release.outputs.release_created }}
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
+      - name: Build and attach release artifacts
+        if: ${{ steps.release.outputs.release_created }}
+        run: ./scripts/publish-release
+        env:
+          TAG: ${{ steps.release.outputs.tag_name }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

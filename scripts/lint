@@ -5,6 +5,11 @@ cd "$(dirname "$0")/.."
 echo "==> Running branding check"
 ./scripts/check-branding
 
+# `uv.lock` records the project's own version, so it drifts whenever the version in
+# pyproject.toml is bumped. Catching that here keeps the release PR honest.
+echo "==> Checking uv.lock is up to date"
+uv lock --check
+
 echo "==> Running ruff"
 uv run ruff check .
 uv run ruff format --check .
