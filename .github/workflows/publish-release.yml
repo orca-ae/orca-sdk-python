@@ -1,0 +1,35 @@
+# Re-run publishing for a release that already exists — either because the publish step
+# in `create-releases.yml` failed, or to seed artifacts for a tag created by hand.
+# Run it from Actions -> Publish release -> Run workflow.
+name: Publish release
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Tag to build and attach artifacts to, e.g. v0.1.0"
+        required: true
+
+jobs:
+  publish:
+    name: publish
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      # Build from the exact tag, not from `main`.
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.tag }}
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
+      - name: Build and attach release artifacts
+        run: ./scripts/publish-release
+        env:
+          TAG: ${{ inputs.tag }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
