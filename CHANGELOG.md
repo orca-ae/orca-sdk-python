@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.1](https://github.com/orca-ae/orca-sdk-python/compare/v0.1.0...v0.1.1) (2026-08-29)
+
+
+### Documentation
+
+* explain why a green release run can produce no release ([1484fc1](https://github.com/orca-ae/orca-sdk-python/commit/1484fc11a47ccc1b735b74510e11637c157e27a6))
+
 ## 0.1.0
 
 First release. Python client for the Orca Agent Engine API, at parity with the
