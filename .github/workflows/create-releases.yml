@@ -14,6 +14,12 @@ concurrency:
   group: create-releases
   cancel-in-progress: false
 
+# Pinned so the `uv lock` refresh below produces the same lock a developer would. Left
+# unpinned, runners pick up whatever uv is newest and rewrite dependency markers, adding
+# unrelated churn to every Release PR.
+env:
+  UV_VERSION: '0.12.7'
+
 jobs:
   release:
     name: release
@@ -49,6 +55,7 @@ jobs:
         if: ${{ steps.release.outputs.pr }}
         uses: astral-sh/setup-uv@v5
         with:
+          version: ${{ env.UV_VERSION }}
           enable-cache: true
 
       - name: Refresh uv.lock on the Release PR
@@ -77,6 +84,7 @@ jobs:
         if: ${{ steps.release.outputs.release_created }}
         uses: astral-sh/setup-uv@v5
         with:
+          version: ${{ env.UV_VERSION }}
           enable-cache: true
 
       - name: Build and attach release artifacts
