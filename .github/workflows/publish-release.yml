@@ -10,6 +10,10 @@ on:
         description: "Tag to build and attach artifacts to, e.g. v0.1.0"
         required: true
 
+# Pinned so a rebuilt artifact matches what the original release workflow produced.
+env:
+  UV_VERSION: '0.12.7'
+
 jobs:
   publish:
     name: publish
@@ -26,6 +30,7 @@ jobs:
       - name: Install uv
         uses: astral-sh/setup-uv@v5
         with:
+          version: ${{ env.UV_VERSION }}
           enable-cache: true
 
       - name: Build and attach release artifacts
