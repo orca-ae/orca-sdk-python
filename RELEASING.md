@@ -62,6 +62,7 @@ Nothing else needs doing — there is no manual version bump and no hand-edited 
 |------|---------|
 | Every push to `main` | `push` |
 | Daily 05:00 UTC | `schedule` cron |
+| On demand | `workflow_dispatch` (no inputs) |
 
 Guarded by `if: github.repository == 'orca-ae/orca-sdk-python'` so a fork can never cut a
 release.
