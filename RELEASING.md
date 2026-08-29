@@ -29,6 +29,20 @@ pre-1.0 SDK, where a breaking change should not burn the major version.
 
 [conventional commits]: https://www.conventionalcommits.org/
 
+**A push of only hidden-type commits produces no release at all.** `test:` and `ci:` are
+marked `hidden: true`, and release-please treats hidden types as non-user-facing: it skips
+the release rather than cutting one with an empty changelog. The workflow still succeeds,
+so a green run does not mean a release happened. If you expected one and got nothing, look
+for this line in the **Create releases** log:
+
+```
+✔ Considering: 1 commits
+✔ No user facing commits found since <sha> - skipping
+```
+
+To ship a release whose commits are all hidden types, add a `Release-As: X.Y.Z` footer to
+one of them.
+
 **The version lives in exactly one place: `[project].version` in `pyproject.toml`.**
 `src/orca/_version.py` derives `__version__` from the installed distribution's metadata
 via `importlib.metadata`, and `src/orca/__init__.py` re-exports it. Nothing is
