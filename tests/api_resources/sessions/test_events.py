@@ -168,6 +168,7 @@ class TestEvents:
         assert [e.id for e in events] == ["evt_123"]
         assert_matches_type(SessionEvent, events[0], path=["response"])
         assert "/v1/sessions/session_123/events/stream" in str(_req(route).url)
+        assert _req(route).headers["accept"] == "text/event-stream"
 
     @parametrize
     @pytest.mark.respx(base_url=base_url)
@@ -181,12 +182,14 @@ class TestEvents:
                 from_cursor="evt_prev",
                 subpath="sub",
                 event_deltas=["agent.message", "agent.thinking"],
+                extra_headers={"Accept": "text/event-stream; replay=all"},
             )
         )
         params = _req(route).url.params
         assert params["from_cursor"] == "evt_prev"
         assert params["subpath"] == "sub"
         assert params.get_list("event_deltas") == ["agent.message", "agent.thinking"]
+        assert _req(route).headers["accept"] == "text/event-stream; replay=all"
 
     @parametrize
     def test_path_params_stream(self, client: Orca) -> None:
@@ -241,12 +244,13 @@ class TestAsyncEvents:
     @parametrize
     @pytest.mark.respx(base_url=base_url)
     async def test_method_stream(self, async_client: AsyncOrca, respx_mock: MockRouter) -> None:
-        respx_mock.get("/v1/sessions/session_123/events/stream").mock(
+        route = respx_mock.get("/v1/sessions/session_123/events/stream").mock(
             return_value=httpx2.Response(200, headers={"Content-Type": "text/event-stream"}, content=_sse(EVENT))
         )
         stream = await async_client.sessions.events.stream("session_123")
         events = [e async for e in stream]
         assert [e.id for e in events] == ["evt_123"]
+        assert _req(route).headers["accept"] == "text/event-stream"
 
     @parametrize
     async def test_path_params_stream(self, async_client: AsyncOrca) -> None:

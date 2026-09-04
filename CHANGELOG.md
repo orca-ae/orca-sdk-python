@@ -9,6 +9,11 @@
 - add direct Managed Agents and Registry provider E2E workflows pinned to the
   paired `0.4.4-rc.1` backend images
 
+### Fixes
+
+- send `Accept: text/event-stream` from Session and thread SSE methods so
+  content-negotiating gateways do not reject streams with HTTP 406
+
 ## [0.1.1](https://github.com/orca-ae/orca-sdk-python/compare/v0.1.0...v0.1.1) (2026-08-29)
 
 
