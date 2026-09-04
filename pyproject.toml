@@ -1,6 +1,6 @@
 [project]
 name = "orca-sdk"
-version = "0.1.1"
+version = "0.2.0"
 description = "Python client for the Orca Agent Engine API"
 dynamic = ["readme"]
 license = "Apache-2.0"

@@ -14,6 +14,18 @@
 - send `Accept: text/event-stream` from Session and thread SSE methods so
   content-negotiating gateways do not reject streams with HTTP 406
 
+## [0.2.0](https://github.com/orca-ae/orca-sdk-python/compare/v0.1.1...v0.2.0) (2026-09-04)
+
+
+### Features
+
+* add policy and pricing extension APIs ([5934b55](https://github.com/orca-ae/orca-sdk-python/commit/5934b552a9cd140043e5317977828fc46a7fb5c1))
+
+
+### Bug Fixes
+
+* **sessions:** send the SSE response media type ([5934b55](https://github.com/orca-ae/orca-sdk-python/commit/5934b552a9cd140043e5317977828fc46a7fb5c1))
+
 ## [0.1.1](https://github.com/orca-ae/orca-sdk-python/compare/v0.1.0...v0.1.1) (2026-08-29)
 
 
