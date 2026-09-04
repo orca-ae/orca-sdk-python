@@ -13,14 +13,9 @@ first gated call on a client pays for it.
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, cast
-
 from ..._resource import SyncAPIResource, AsyncAPIResource
-
-if TYPE_CHECKING:
-    from ..._client import Orca, AsyncOrca
-
-CLOUD_EXTENSION_GROUP = "cloud.sn.io"
+from ..._constants import CLOUD_EXTENSION_GROUP
+from .._extension_gate import extension_gate, async_extension_gate
 
 __all__ = ["CLOUD_EXTENSION_GROUP", "cloud_gate", "async_cloud_gate"]
 
@@ -31,9 +26,9 @@ def cloud_gate(resource: SyncAPIResource) -> None:
     `SyncAPIResource` types `_client` as the transport base class; the narrowing lives
     here so call sites stay a single readable line.
     """
-    cast("Orca", resource._client)._ensure_extension_available(CLOUD_EXTENSION_GROUP)
+    extension_gate(resource, CLOUD_EXTENSION_GROUP)
 
 
 async def async_cloud_gate(resource: AsyncAPIResource) -> None:
     """Raise `ExtensionNotAvailableError` unless this deployment serves `cloud.sn.io`."""
-    await cast("AsyncOrca", resource._client)._ensure_extension_available(CLOUD_EXTENSION_GROUP)
+    await async_extension_gate(resource, CLOUD_EXTENSION_GROUP)

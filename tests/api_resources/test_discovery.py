@@ -7,9 +7,10 @@ import httpx2
 import pytest
 from respx import MockRouter
 
-from orca import Orca, AsyncOrca
+from orca import Orca, AsyncOrca, ExtensionNotAvailableError
 from tests.utils import assert_matches_type
 from orca.types.api_group import APIGroupList
+from orca.types.api_resource import APIResourceList
 from orca.resources.discovery import Discovery, AsyncDiscovery
 
 base_url = os.environ.get("TEST_API_BASE_URL", "http://127.0.0.1:4010")
@@ -26,6 +27,12 @@ GROUP_LIST: dict[str, Any] = {
 }
 
 EMPTY_GROUP_LIST: dict[str, Any] = {"kind": "APIGroupList", "groups": []}
+
+RESOURCE_LIST: dict[str, Any] = {
+    "kind": "APIResourceList",
+    "group_version": "policy.runorca.ai/v1",
+    "resources": [{"name": "guardrails", "namespaced": True, "kind": "Guardrail"}],
+}
 
 
 def _req(route: Any, index: int = 0) -> httpx2.Request:
@@ -113,6 +120,35 @@ class TestDiscovery:
         _sync(client).groups(extra_headers={"X-Test-Header": "propagated"})
         assert _req(route).headers["x-test-header"] == "propagated"
 
+    @parametrize
+    @pytest.mark.parametrize(
+        "group,path,method",
+        [
+            ("policy.runorca.ai", "/apis/policy.runorca.ai/v1", "policy_group_resources"),
+            ("pricing.runorca.ai", "/apis/pricing.runorca.ai/v1", "pricing_group_resources"),
+        ],
+    )
+    @pytest.mark.respx(base_url=base_url)
+    def test_group_resource_discovery(
+        self, client: Orca, respx_mock: MockRouter, group: str, path: str, method: str
+    ) -> None:
+        client._extension_groups.clear()
+        respx_mock.get("/apis").mock(return_value=httpx2.Response(200, json={"groups": [{"name": group}]}))
+        route = respx_mock.get(path).mock(return_value=httpx2.Response(200, json=RESOURCE_LIST))
+        result = getattr(client.discovery, method)(extra_headers={"X-Test": "discovery"})
+        assert_matches_type(APIResourceList, result, path=["response"])
+        assert _req(route).headers["x-test"] == "discovery"
+
+    @parametrize
+    @pytest.mark.respx(base_url=base_url, assert_all_called=False)
+    def test_group_resource_discovery_is_gated(self, client: Orca, respx_mock: MockRouter) -> None:
+        client._extension_groups.clear()
+        respx_mock.get("/apis").mock(return_value=httpx2.Response(200, json=EMPTY_GROUP_LIST))
+        route = respx_mock.get("/apis/policy.runorca.ai/v1").mock(return_value=httpx2.Response(200, json=RESOURCE_LIST))
+        with pytest.raises(ExtensionNotAvailableError):
+            client.discovery.policy_group_resources()
+        assert route.called is False
+
 
 class TestAsyncDiscovery:
     parametrize = pytest.mark.parametrize("async_client", [False, True], indirect=True, ids=["loose", "strict"])
@@ -148,3 +184,14 @@ class TestAsyncDiscovery:
             assert not response.is_closed
             assert_matches_type(APIGroupList, await response.parse(), path=["response"])
         assert cast(Any, response.is_closed) is True
+
+    @parametrize
+    @pytest.mark.respx(base_url=base_url)
+    async def test_policy_group_resource_discovery(self, async_client: AsyncOrca, respx_mock: MockRouter) -> None:
+        async_client._extension_groups.clear()
+        respx_mock.get("/apis").mock(
+            return_value=httpx2.Response(200, json={"groups": [{"name": "policy.runorca.ai"}]})
+        )
+        respx_mock.get("/apis/policy.runorca.ai/v1").mock(return_value=httpx2.Response(200, json=RESOURCE_LIST))
+        result = await async_client.discovery.policy_group_resources()
+        assert_matches_type(APIResourceList, result, path=["response"])

@@ -6,7 +6,7 @@ import httpx2
 
 from ...types import agent_list_params, agent_create_params, agent_update_params, agent_retrieve_params
 from ..._types import Body, Omit, Query, Headers, NotGiven, omit, not_given
-from ..._utils import path_template, maybe_transform, async_maybe_transform
+from ..._utils import is_given, path_template, maybe_transform, async_maybe_transform
 from .versions import (
     Versions,
     AsyncVersions,
@@ -23,9 +23,11 @@ from ..._response import (
     async_to_raw_response_wrapper,
     async_to_streamed_response_wrapper,
 )
+from ..._constants import POLICY_EXTENSION_GROUP
 from ...pagination import SyncPageCursor, AsyncPageCursor
 from ...types.agent import Agent
 from ..._base_client import AsyncPaginator, make_request_options
+from .._extension_gate import extension_gate, async_extension_gate
 from ...types.agent_shared import (
     ModelConfigParam,
     AgentMcpServerParam,
@@ -60,6 +62,7 @@ class Agents(SyncAPIResource):
         mcp_servers: List[AgentMcpServerParam] | Omit = omit,
         tools: List[AgentToolDefinitionParam] | Omit = omit,
         skills: List[AgentSkillDefinitionParam] | Omit = omit,
+        guardrail_ids: List[str] | Omit = omit,
         metadata: Dict[str, str] | Omit = omit,
         multiagent: Optional[AgentMultiagentDefinitionParam] | Omit = omit,
         # Use the following arguments if you need to pass additional parameters to the API that aren't available via kwargs.
@@ -87,6 +90,8 @@ class Agents(SyncAPIResource):
 
           skills: Skills attached to the agent.
 
+          guardrail_ids: Guardrails explicitly attached to the agent. Requires `orca-beta`.
+
           metadata: Arbitrary string key/value pairs.
 
           multiagent: Coordinator configuration when this agent orchestrates others.
@@ -99,6 +104,8 @@ class Agents(SyncAPIResource):
 
           timeout: Override the client-level default timeout for this request, in seconds
         """
+        if is_given(guardrail_ids):
+            extension_gate(self, POLICY_EXTENSION_GROUP)
         return self._post(
             "/v1/agents",
             body=maybe_transform(
@@ -110,6 +117,7 @@ class Agents(SyncAPIResource):
                     "mcp_servers": mcp_servers,
                     "tools": tools,
                     "skills": skills,
+                    "guardrail_ids": guardrail_ids,
                     "metadata": metadata,
                     "multiagent": multiagent,
                 },
@@ -173,6 +181,7 @@ class Agents(SyncAPIResource):
         mcp_servers: Optional[List[AgentMcpServerParam]] | Omit = omit,
         tools: Optional[List[AgentToolDefinitionParam]] | Omit = omit,
         skills: Optional[List[AgentSkillDefinitionParam]] | Omit = omit,
+        guardrail_ids: Optional[List[str]] | Omit = omit,
         multiagent: Optional[AgentMultiagentDefinitionParam] | Omit = omit,
         metadata: Optional[Dict[str, Optional[str]]] | Omit = omit,
         extra_headers: Headers | None = None,
@@ -192,6 +201,8 @@ class Agents(SyncAPIResource):
 
           version: Must match the agent's current version when provided.
 
+          guardrail_ids: Replace attached guardrails, or pass `None` to clear them. Requires `orca-beta`.
+
           metadata: A null value removes that individual key.
 
           extra_headers: Send extra headers
@@ -204,6 +215,8 @@ class Agents(SyncAPIResource):
         """
         if not agent_id:
             raise ValueError(f"Expected a non-empty value for `agent_id` but received {agent_id!r}")
+        if is_given(guardrail_ids):
+            extension_gate(self, POLICY_EXTENSION_GROUP)
         return self._post(
             path_template("/v1/agents/{agent_id}", agent_id=agent_id),
             body=maybe_transform(
@@ -216,6 +229,7 @@ class Agents(SyncAPIResource):
                     "mcp_servers": mcp_servers,
                     "tools": tools,
                     "skills": skills,
+                    "guardrail_ids": guardrail_ids,
                     "multiagent": multiagent,
                     "metadata": metadata,
                 },
@@ -333,6 +347,7 @@ class AsyncAgents(AsyncAPIResource):
         mcp_servers: List[AgentMcpServerParam] | Omit = omit,
         tools: List[AgentToolDefinitionParam] | Omit = omit,
         skills: List[AgentSkillDefinitionParam] | Omit = omit,
+        guardrail_ids: List[str] | Omit = omit,
         metadata: Dict[str, str] | Omit = omit,
         multiagent: Optional[AgentMultiagentDefinitionParam] | Omit = omit,
         # Use the following arguments if you need to pass additional parameters to the API that aren't available via kwargs.
@@ -360,6 +375,8 @@ class AsyncAgents(AsyncAPIResource):
 
           skills: Skills attached to the agent.
 
+          guardrail_ids: Guardrails explicitly attached to the agent. Requires `orca-beta`.
+
           metadata: Arbitrary string key/value pairs.
 
           multiagent: Coordinator configuration when this agent orchestrates others.
@@ -372,6 +389,8 @@ class AsyncAgents(AsyncAPIResource):
 
           timeout: Override the client-level default timeout for this request, in seconds
         """
+        if is_given(guardrail_ids):
+            await async_extension_gate(self, POLICY_EXTENSION_GROUP)
         return await self._post(
             "/v1/agents",
             body=await async_maybe_transform(
@@ -383,6 +402,7 @@ class AsyncAgents(AsyncAPIResource):
                     "mcp_servers": mcp_servers,
                     "tools": tools,
                     "skills": skills,
+                    "guardrail_ids": guardrail_ids,
                     "metadata": metadata,
                     "multiagent": multiagent,
                 },
@@ -446,6 +466,7 @@ class AsyncAgents(AsyncAPIResource):
         mcp_servers: Optional[List[AgentMcpServerParam]] | Omit = omit,
         tools: Optional[List[AgentToolDefinitionParam]] | Omit = omit,
         skills: Optional[List[AgentSkillDefinitionParam]] | Omit = omit,
+        guardrail_ids: Optional[List[str]] | Omit = omit,
         multiagent: Optional[AgentMultiagentDefinitionParam] | Omit = omit,
         metadata: Optional[Dict[str, Optional[str]]] | Omit = omit,
         extra_headers: Headers | None = None,
@@ -465,6 +486,8 @@ class AsyncAgents(AsyncAPIResource):
 
           version: Must match the agent's current version when provided.
 
+          guardrail_ids: Replace attached guardrails, or pass `None` to clear them. Requires `orca-beta`.
+
           metadata: A null value removes that individual key.
 
           extra_headers: Send extra headers
@@ -477,6 +500,8 @@ class AsyncAgents(AsyncAPIResource):
         """
         if not agent_id:
             raise ValueError(f"Expected a non-empty value for `agent_id` but received {agent_id!r}")
+        if is_given(guardrail_ids):
+            await async_extension_gate(self, POLICY_EXTENSION_GROUP)
         return await self._post(
             path_template("/v1/agents/{agent_id}", agent_id=agent_id),
             body=await async_maybe_transform(
@@ -489,6 +514,7 @@ class AsyncAgents(AsyncAPIResource):
                     "mcp_servers": mcp_servers,
                     "tools": tools,
                     "skills": skills,
+                    "guardrail_ids": guardrail_ids,
                     "multiagent": multiagent,
                     "metadata": metadata,
                 },

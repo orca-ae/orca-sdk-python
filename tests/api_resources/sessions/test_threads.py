@@ -163,6 +163,7 @@ class TestThreads:
         stream = client.sessions.threads.events.stream("session_123", "sth_123")
         assert [e.id for e in stream] == ["evt_123"]
         assert _req(route).url.path == "/v1/sessions/session_123/threads/sth_123/stream"
+        assert _req(route).headers["accept"] == "text/event-stream"
 
     @parametrize
     @pytest.mark.respx(base_url=base_url)
@@ -250,6 +251,7 @@ class TestAsyncThreads:
         stream = await async_client.sessions.threads.events.stream("session_123", "sth_123")
         assert [e.id async for e in stream] == ["evt_123"]
         assert _req(route).url.path == "/v1/sessions/session_123/threads/sth_123/stream"
+        assert _req(route).headers["accept"] == "text/event-stream"
 
     @parametrize
     async def test_events_path_params_stream(self, async_client: AsyncOrca) -> None:

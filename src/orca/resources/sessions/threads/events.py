@@ -133,6 +133,7 @@ class ThreadEvents(SyncAPIResource):
             raise ValueError(f"Expected a non-empty value for `session_id` but received {session_id!r}")
         if not thread_id:
             raise ValueError(f"Expected a non-empty value for `thread_id` but received {thread_id!r}")
+        extra_headers = {"Accept": "text/event-stream", **(extra_headers or {})}
         return self._get(
             path_template(
                 "/v1/sessions/{session_id}/threads/{thread_id}/stream",
@@ -261,6 +262,7 @@ class AsyncThreadEvents(AsyncAPIResource):
             raise ValueError(f"Expected a non-empty value for `session_id` but received {session_id!r}")
         if not thread_id:
             raise ValueError(f"Expected a non-empty value for `thread_id` but received {thread_id!r}")
+        extra_headers = {"Accept": "text/event-stream", **(extra_headers or {})}
         return await self._get(
             path_template(
                 "/v1/sessions/{session_id}/threads/{thread_id}/stream",

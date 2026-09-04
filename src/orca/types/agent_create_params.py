@@ -30,6 +30,9 @@ class AgentCreateParams(TypedDict, total=False):
 
     skills: List[AgentSkillDefinitionParam]
 
+    guardrail_ids: List[str]
+    """Guardrails explicitly attached to this agent. Requires `orca-beta`."""
+
     metadata: Dict[str, str]
 
     multiagent: Optional[AgentMultiagentDefinitionParam]

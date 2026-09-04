@@ -193,6 +193,7 @@ class Events(SyncAPIResource):
         """
         if not session_id:
             raise ValueError(f"Expected a non-empty value for `session_id` but received {session_id!r}")
+        extra_headers = {"Accept": "text/event-stream", **(extra_headers or {})}
         return self._get(
             path_template("/v1/sessions/{session_id}/events/stream", session_id=session_id),
             options=make_request_options(
@@ -378,6 +379,7 @@ class AsyncEvents(AsyncAPIResource):
         """
         if not session_id:
             raise ValueError(f"Expected a non-empty value for `session_id` but received {session_id!r}")
+        extra_headers = {"Accept": "text/event-stream", **(extra_headers or {})}
         return await self._get(
             path_template("/v1/sessions/{session_id}/events/stream", session_id=session_id),
             options=make_request_options(

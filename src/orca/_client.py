@@ -80,6 +80,14 @@ if TYPE_CHECKING:
         DiscoveryWithStreamingResponse,
         AsyncDiscoveryWithStreamingResponse,
     )
+    from .resources.guardrails import (
+        Guardrails,
+        AsyncGuardrails,
+        GuardrailsWithRawResponse,
+        AsyncGuardrailsWithRawResponse,
+        GuardrailsWithStreamingResponse,
+        AsyncGuardrailsWithStreamingResponse,
+    )
     from .resources.environments import (
         Environments,
         AsyncEnvironments,
@@ -87,6 +95,14 @@ if TYPE_CHECKING:
         AsyncEnvironmentsWithRawResponse,
         EnvironmentsWithStreamingResponse,
         AsyncEnvironmentsWithStreamingResponse,
+    )
+    from .resources.model_prices import (
+        ModelPrices,
+        AsyncModelPrices,
+        ModelPricesWithRawResponse,
+        AsyncModelPricesWithRawResponse,
+        ModelPricesWithStreamingResponse,
+        AsyncModelPricesWithStreamingResponse,
     )
     from .resources.memory_stores import (
         MemoryStores,
@@ -125,10 +141,6 @@ AsyncApiKeyProvider: TypeAlias = Union[str, Callable[[], Union[str, Awaitable[st
 # Deployments used to require one of these suffixes on the base URL. They are no
 # longer part of it -- core is served at the host root -- so strip and warn.
 _LEGACY_BASE_URL_SUFFIX = re.compile(r"(/api/v1|/v1/registry|/v1)$")
-
-#: Extension group serving the `cloud.*` namespace. Single-sourced so the gate
-#: never re-derives the group name from a request path.
-CLOUD_EXTENSION_GROUP = "cloud.sn.io"
 
 __all__ = [
     "Timeout",
@@ -282,6 +294,18 @@ class Orca(SyncAPIClient):
         from .resources.discovery import Discovery
 
         return Discovery(self)
+
+    @cached_property
+    def guardrails(self) -> Guardrails:
+        from .resources.guardrails import Guardrails
+
+        return Guardrails(self)
+
+    @cached_property
+    def model_prices(self) -> ModelPrices:
+        from .resources.model_prices import ModelPrices
+
+        return ModelPrices(self)
 
     @cached_property
     def cloud(self) -> Cloud:
@@ -518,6 +542,18 @@ class AsyncOrca(AsyncAPIClient):
         from .resources.discovery import AsyncDiscovery
 
         return AsyncDiscovery(self)
+
+    @cached_property
+    def guardrails(self) -> AsyncGuardrails:
+        from .resources.guardrails import AsyncGuardrails
+
+        return AsyncGuardrails(self)
+
+    @cached_property
+    def model_prices(self) -> AsyncModelPrices:
+        from .resources.model_prices import AsyncModelPrices
+
+        return AsyncModelPrices(self)
 
     @cached_property
     def cloud(self) -> AsyncCloud:
@@ -799,6 +835,18 @@ class OrcaWithRawResponse:
         return DiscoveryWithRawResponse(self._client.discovery)
 
     @cached_property
+    def guardrails(self) -> GuardrailsWithRawResponse:
+        from .resources.guardrails import GuardrailsWithRawResponse
+
+        return GuardrailsWithRawResponse(self._client.guardrails)
+
+    @cached_property
+    def model_prices(self) -> ModelPricesWithRawResponse:
+        from .resources.model_prices import ModelPricesWithRawResponse
+
+        return ModelPricesWithRawResponse(self._client.model_prices)
+
+    @cached_property
     def cloud(self) -> CloudWithRawResponse:
         from .resources.cloud import CloudWithRawResponse
 
@@ -864,6 +912,18 @@ class AsyncOrcaWithRawResponse:
         from .resources.discovery import AsyncDiscoveryWithRawResponse
 
         return AsyncDiscoveryWithRawResponse(self._client.discovery)
+
+    @cached_property
+    def guardrails(self) -> AsyncGuardrailsWithRawResponse:
+        from .resources.guardrails import AsyncGuardrailsWithRawResponse
+
+        return AsyncGuardrailsWithRawResponse(self._client.guardrails)
+
+    @cached_property
+    def model_prices(self) -> AsyncModelPricesWithRawResponse:
+        from .resources.model_prices import AsyncModelPricesWithRawResponse
+
+        return AsyncModelPricesWithRawResponse(self._client.model_prices)
 
     @cached_property
     def cloud(self) -> AsyncCloudWithRawResponse:
@@ -933,6 +993,18 @@ class OrcaWithStreamedResponse:
         return DiscoveryWithStreamingResponse(self._client.discovery)
 
     @cached_property
+    def guardrails(self) -> GuardrailsWithStreamingResponse:
+        from .resources.guardrails import GuardrailsWithStreamingResponse
+
+        return GuardrailsWithStreamingResponse(self._client.guardrails)
+
+    @cached_property
+    def model_prices(self) -> ModelPricesWithStreamingResponse:
+        from .resources.model_prices import ModelPricesWithStreamingResponse
+
+        return ModelPricesWithStreamingResponse(self._client.model_prices)
+
+    @cached_property
     def cloud(self) -> CloudWithStreamingResponse:
         from .resources.cloud import CloudWithStreamingResponse
 
@@ -998,6 +1070,18 @@ class AsyncOrcaWithStreamedResponse:
         from .resources.discovery import AsyncDiscoveryWithStreamingResponse
 
         return AsyncDiscoveryWithStreamingResponse(self._client.discovery)
+
+    @cached_property
+    def guardrails(self) -> AsyncGuardrailsWithStreamingResponse:
+        from .resources.guardrails import AsyncGuardrailsWithStreamingResponse
+
+        return AsyncGuardrailsWithStreamingResponse(self._client.guardrails)
+
+    @cached_property
+    def model_prices(self) -> AsyncModelPricesWithStreamingResponse:
+        from .resources.model_prices import AsyncModelPricesWithStreamingResponse
+
+        return AsyncModelPricesWithStreamingResponse(self._client.model_prices)
 
     @cached_property
     def cloud(self) -> AsyncCloudWithStreamingResponse:

@@ -182,6 +182,35 @@ except OrcaError as err:
 | `APIConnectionTimeoutError` | timeout |
 | `ExtensionNotAvailableError` | client-side gate |
 
+## Policy and pricing extensions
+
+Guardrail management and effective model pricing are exposed as top-level resources.
+Like cloud methods, they check extension discovery first and raise
+`ExtensionNotAvailableError` before issuing the business request when unavailable:
+
+```python
+guardrail = client.guardrails.create(
+    name="Protect production",
+    phases=["tool_call"],
+    scope="explicit",
+    rule={"kind": "builtin", "builtin": "block_tools", "params": {"tools": ["shell"]}},
+)
+
+agent = client.agents.create(
+    model="some-model",
+    name="Guarded agent",
+    guardrail_ids=[guardrail.id],
+    extra_headers={"orca-beta": "managed-agents-2026-04-01"},
+)
+
+for price in client.model_prices.list():
+    print(price.provider, price.model_id, price.input_per_million_tokens)
+```
+
+`guardrail_ids` is optional on agent create/update and session-local agent
+overrides. It is not supported by deployment APIs. The SDK probes the policy
+extension only when the field is explicitly supplied.
+
 ## Cloud extensions
 
 Methods under `client.cloud.*` are served by a deployment-specific extension group. On a

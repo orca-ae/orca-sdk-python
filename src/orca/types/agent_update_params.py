@@ -37,6 +37,9 @@ class AgentUpdateParams(TypedDict, total=False):
 
     skills: Optional[List[AgentSkillDefinitionParam]]
 
+    guardrail_ids: Optional[List[str]]
+    """Replace attached guardrails, or pass `None` to clear them. Requires `orca-beta`."""
+
     multiagent: Optional[AgentMultiagentDefinitionParam]
 
     metadata: Optional[Dict[str, Optional[str]]]

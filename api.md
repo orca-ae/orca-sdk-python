@@ -132,6 +132,27 @@ contract; `tests/test_contract.py` enforces that.
 | Method | Returns |
 |---|---|
 | `client.discovery.groups()` | `APIGroupList` |
+| `client.discovery.policy_group_resources()` | `APIResourceList` |
+| `client.discovery.pricing_group_resources()` | `APIResourceList` |
+
+## `client.guardrails`
+
+| Method | Returns |
+|---|---|
+| `client.guardrails.archive()` | `Guardrail` |
+| `client.guardrails.create()` | `Guardrail` |
+| `client.guardrails.delete()` | `DeletedGuardrail` |
+| `client.guardrails.list()` | `SyncPageCursor[Guardrail]` |
+| `client.guardrails.list_types()` | `GuardrailTypeList` |
+| `client.guardrails.retrieve()` | `Guardrail` |
+| `client.guardrails.update()` | `Guardrail` |
+
+## `client.model_prices`
+
+| Method | Returns |
+|---|---|
+| `client.model_prices.list()` | `SyncPageCursor[ModelPrice]` |
+| `client.model_prices.retrieve()` | `ModelPrice` |
 
 ## `client.cloud`
 
@@ -235,6 +256,6 @@ contract; `tests/test_contract.py` enforces that.
 
 ---
 
-**179 public methods.** Each is available on both `Orca` and `AsyncOrca`,
+**190 public methods.** Each is available on both `Orca` and `AsyncOrca`,
 with the same signature, plus `.with_raw_response` and `.with_streaming_response`
 variants.
