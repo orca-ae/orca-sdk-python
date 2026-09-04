@@ -23,9 +23,11 @@ from typing import (
     Generic,
     Mapping,
     TypeVar,
+    Callable,
     Iterable,
     Iterator,
     Optional,
+    Awaitable,
     Generator,
     AsyncIterator,
     cast,
@@ -286,16 +288,21 @@ class AsyncPaginator(Generic[_T, AsyncPageT]):
         options: FinalRequestOptions,
         page_cls: Type[AsyncPageT],
         model: Type[_T],
+        pre_request: Callable[[], Awaitable[None]] | None = None,
     ) -> None:
         self._model = model
         self._client = client
         self._options = options
         self._page_cls = page_cls
+        self._pre_request = pre_request
 
     def __await__(self) -> Generator[Any, None, AsyncPageT]:
         return self._get_page().__await__()
 
     async def _get_page(self) -> AsyncPageT:
+        if self._pre_request is not None:
+            await self._pre_request()
+
         def _parser(resp: AsyncPageT) -> AsyncPageT:
             resp._set_private_attributes(
                 model=self._model,
@@ -1814,8 +1821,15 @@ class AsyncAPIClient(BaseClient[httpx2.AsyncClient, AsyncStream[Any]]):
         model: Type[_T],
         page: Type[AsyncPageT],
         options: FinalRequestOptions,
+        pre_request: Callable[[], Awaitable[None]] | None = None,
     ) -> AsyncPaginator[_T, AsyncPageT]:
-        return AsyncPaginator(client=self, options=options, page_cls=page, model=model)
+        return AsyncPaginator(
+            client=self,
+            options=options,
+            page_cls=page,
+            model=model,
+            pre_request=pre_request,
+        )
 
     @overload
     async def get(
@@ -1989,9 +2003,10 @@ class AsyncAPIClient(BaseClient[httpx2.AsyncClient, AsyncStream[Any]]):
         body: Body | None = None,
         options: RequestOptions = {},
         method: str = "get",
+        pre_request: Callable[[], Awaitable[None]] | None = None,
     ) -> AsyncPaginator[_T, AsyncPageT]:
         opts = FinalRequestOptions.construct(method=method, url=path, json_data=body, **options)
-        return self._request_api_list(model, page, opts)
+        return self._request_api_list(model, page, opts, pre_request=pre_request)
 
 
 def make_request_options(

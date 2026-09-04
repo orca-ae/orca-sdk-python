@@ -30,7 +30,7 @@ from .threads import (
     AsyncThreadsWithStreamingResponse,
 )
 from ..._types import Body, Omit, Query, Headers, NotGiven, omit, not_given
-from ..._utils import path_template, maybe_transform, async_maybe_transform
+from ..._utils import is_dict, path_template, maybe_transform, async_maybe_transform
 from ..._compat import cached_property
 from .resources import (
     Resources,
@@ -47,9 +47,11 @@ from ..._response import (
     async_to_raw_response_wrapper,
     async_to_streamed_response_wrapper,
 )
+from ..._constants import POLICY_EXTENSION_GROUP
 from ...pagination import SyncPageCursor, AsyncPageCursor
 from ..._base_client import AsyncPaginator, make_request_options
 from ...types.session import Session, DeletedSession
+from .._extension_gate import extension_gate, async_extension_gate
 from ...types.session_resource import SessionResourceRequestParam
 from ...types.session_create_params import SessionAgentInputParam, SessionInitialEventParam
 from ...types.session_update_params import SessionAgentUpdateParam
@@ -129,6 +131,8 @@ class Sessions(SyncAPIResource):
 
           timeout: Override the client-level default timeout for this request, in seconds
         """
+        if is_dict(agent) and agent.get("type") == "agent_with_overrides" and "guardrail_ids" in agent:
+            extension_gate(self, POLICY_EXTENSION_GROUP)
         return self._post(
             "/v1/sessions",
             body=maybe_transform(
@@ -434,6 +438,8 @@ class AsyncSessions(AsyncAPIResource):
 
           timeout: Override the client-level default timeout for this request, in seconds
         """
+        if is_dict(agent) and agent.get("type") == "agent_with_overrides" and "guardrail_ids" in agent:
+            await async_extension_gate(self, POLICY_EXTENSION_GROUP)
         return await self._post(
             "/v1/sessions",
             body=await async_maybe_transform(

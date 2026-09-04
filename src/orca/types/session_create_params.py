@@ -49,6 +49,9 @@ class SessionAgentWithOverridesParam(TypedDict, total=False):
 
     skills: List[AgentSkillDefinitionParam]
 
+    guardrail_ids: List[str]
+    """Session-local guardrails for this agent snapshot. Requires `orca-beta`."""
+
 
 SessionAgentInputParam: TypeAlias = Union[
     str,

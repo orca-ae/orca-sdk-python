@@ -65,6 +65,9 @@ class Agent(BaseModel):
 
     skills: List[AgentResponseSkillDefinition]
 
+    guardrail_ids: Optional[List[str]] = None
+    """Present on policy-extension responses requested with `orca-beta`."""
+
     multiagent: Optional[AgentMultiagentDefinition] = None
 
     metadata: Dict[str, str]

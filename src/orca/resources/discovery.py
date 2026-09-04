@@ -11,8 +11,11 @@ from .._response import (
     async_to_raw_response_wrapper,
     async_to_streamed_response_wrapper,
 )
+from .._constants import POLICY_EXTENSION_GROUP, PRICING_EXTENSION_GROUP
 from .._base_client import make_request_options
+from ._extension_gate import extension_gate, async_extension_gate
 from ..types.api_group import APIGroupList
+from ..types.api_resource import APIResourceList
 
 __all__ = ["Discovery", "AsyncDiscovery"]
 
@@ -65,6 +68,42 @@ class Discovery(SyncAPIResource):
             cast_to=APIGroupList,
         )
 
+    def policy_group_resources(
+        self,
+        *,
+        extra_headers: Headers | None = None,
+        extra_query: Query | None = None,
+        extra_body: Body | None = None,
+        timeout: float | httpx2.Timeout | None | NotGiven = not_given,
+    ) -> APIResourceList:
+        """List resources advertised by the policy extension API group."""
+        extension_gate(self, POLICY_EXTENSION_GROUP)
+        return self._get(
+            "/apis/policy.runorca.ai/v1",
+            options=make_request_options(
+                extra_headers=extra_headers, extra_query=extra_query, extra_body=extra_body, timeout=timeout
+            ),
+            cast_to=APIResourceList,
+        )
+
+    def pricing_group_resources(
+        self,
+        *,
+        extra_headers: Headers | None = None,
+        extra_query: Query | None = None,
+        extra_body: Body | None = None,
+        timeout: float | httpx2.Timeout | None | NotGiven = not_given,
+    ) -> APIResourceList:
+        """List resources advertised by the pricing extension API group."""
+        extension_gate(self, PRICING_EXTENSION_GROUP)
+        return self._get(
+            "/apis/pricing.runorca.ai/v1",
+            options=make_request_options(
+                extra_headers=extra_headers, extra_query=extra_query, extra_body=extra_body, timeout=timeout
+            ),
+            cast_to=APIResourceList,
+        )
+
 
 class AsyncDiscovery(AsyncAPIResource):
     @cached_property
@@ -114,12 +153,50 @@ class AsyncDiscovery(AsyncAPIResource):
             cast_to=APIGroupList,
         )
 
+    async def policy_group_resources(
+        self,
+        *,
+        extra_headers: Headers | None = None,
+        extra_query: Query | None = None,
+        extra_body: Body | None = None,
+        timeout: float | httpx2.Timeout | None | NotGiven = not_given,
+    ) -> APIResourceList:
+        """List resources advertised by the policy extension API group."""
+        await async_extension_gate(self, POLICY_EXTENSION_GROUP)
+        return await self._get(
+            "/apis/policy.runorca.ai/v1",
+            options=make_request_options(
+                extra_headers=extra_headers, extra_query=extra_query, extra_body=extra_body, timeout=timeout
+            ),
+            cast_to=APIResourceList,
+        )
+
+    async def pricing_group_resources(
+        self,
+        *,
+        extra_headers: Headers | None = None,
+        extra_query: Query | None = None,
+        extra_body: Body | None = None,
+        timeout: float | httpx2.Timeout | None | NotGiven = not_given,
+    ) -> APIResourceList:
+        """List resources advertised by the pricing extension API group."""
+        await async_extension_gate(self, PRICING_EXTENSION_GROUP)
+        return await self._get(
+            "/apis/pricing.runorca.ai/v1",
+            options=make_request_options(
+                extra_headers=extra_headers, extra_query=extra_query, extra_body=extra_body, timeout=timeout
+            ),
+            cast_to=APIResourceList,
+        )
+
 
 class DiscoveryWithRawResponse:
     def __init__(self, discovery: Discovery) -> None:
         self._discovery = discovery
 
         self.groups = to_raw_response_wrapper(discovery.groups)
+        self.policy_group_resources = to_raw_response_wrapper(discovery.policy_group_resources)
+        self.pricing_group_resources = to_raw_response_wrapper(discovery.pricing_group_resources)
 
 
 class AsyncDiscoveryWithRawResponse:
@@ -127,6 +204,8 @@ class AsyncDiscoveryWithRawResponse:
         self._discovery = discovery
 
         self.groups = async_to_raw_response_wrapper(discovery.groups)
+        self.policy_group_resources = async_to_raw_response_wrapper(discovery.policy_group_resources)
+        self.pricing_group_resources = async_to_raw_response_wrapper(discovery.pricing_group_resources)
 
 
 class DiscoveryWithStreamingResponse:
@@ -134,6 +213,8 @@ class DiscoveryWithStreamingResponse:
         self._discovery = discovery
 
         self.groups = to_streamed_response_wrapper(discovery.groups)
+        self.policy_group_resources = to_streamed_response_wrapper(discovery.policy_group_resources)
+        self.pricing_group_resources = to_streamed_response_wrapper(discovery.pricing_group_resources)
 
 
 class AsyncDiscoveryWithStreamingResponse:
@@ -141,3 +222,5 @@ class AsyncDiscoveryWithStreamingResponse:
         self._discovery = discovery
 
         self.groups = async_to_streamed_response_wrapper(discovery.groups)
+        self.policy_group_resources = async_to_streamed_response_wrapper(discovery.policy_group_resources)
+        self.pricing_group_resources = async_to_streamed_response_wrapper(discovery.pricing_group_resources)

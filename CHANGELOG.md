@@ -1,5 +1,14 @@
 # Changelog
 
+## Unreleased
+
+### Features
+
+- add Guardrail and Model Price extension APIs, policy-gated `guardrail_ids` on
+  Agent and Session inputs, and policy/pricing resource discovery
+- add direct Managed Agents and Registry provider E2E workflows pinned to the
+  paired `0.4.4-rc.1` backend images
+
 ## [0.1.1](https://github.com/orca-ae/orca-sdk-python/compare/v0.1.0...v0.1.1) (2026-08-29)
 
 
