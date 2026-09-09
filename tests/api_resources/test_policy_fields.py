@@ -8,7 +8,8 @@ import httpx2
 import pytest
 from respx import MockRouter
 
-from orca import Orca, AsyncOrca, ExtensionNotAvailableError
+from orca import Omit, Orca, AsyncOrca, ExtensionNotAvailableError, omit
+from orca.types.session_create_params import SessionAgentWithOverridesParam
 
 base_url = os.environ.get("TEST_API_BASE_URL", "http://127.0.0.1:4010")
 
@@ -64,6 +65,63 @@ def _gate(respx_mock: MockRouter, client: Orca | AsyncOrca, *, available: bool =
 
 class TestPolicyFields:
     parametrize = pytest.mark.parametrize("client", [False, True], indirect=True, ids=["loose", "strict"])
+
+    @parametrize
+    @pytest.mark.parametrize("value", [omit, None, [], ["grd_example"]])
+    @pytest.mark.respx(base_url=base_url, assert_all_called=False)
+    def test_update_omission_and_replacement(
+        self, client: Orca, respx_mock: MockRouter, value: list[str] | None | Omit
+    ) -> None:
+        gate = _gate(respx_mock, client)
+        route = respx_mock.post("/v1/agents/agent_123").mock(return_value=httpx2.Response(200, json=AGENT))
+        result = client.agents.update("agent_123", guardrail_ids=value)
+        assert result.guardrail_ids == ["grd_example"]
+        assert json.loads(_req(route).content) == ({} if isinstance(value, Omit) else {"guardrail_ids": value})
+        assert gate.called == (not isinstance(value, Omit))
+
+    @parametrize
+    @pytest.mark.parametrize("value", [omit, [], ["grd_example"]])
+    @pytest.mark.respx(base_url=base_url, assert_all_called=False)
+    def test_create_and_inline_override_omission(
+        self, client: Orca, respx_mock: MockRouter, value: list[str] | Omit
+    ) -> None:
+        gate = _gate(respx_mock, client)
+        route = respx_mock.post("/v1/agents").mock(return_value=httpx2.Response(200, json=AGENT))
+        client.agents.create(model="some-model", name="demo", guardrail_ids=value)
+        fields = {} if isinstance(value, Omit) else {"guardrail_ids": value}
+        assert json.loads(_req(route).content) == {"model": "some-model", "name": "demo", **fields}
+        assert gate.called == (not isinstance(value, Omit))
+
+        gate = _gate(respx_mock, client)
+        session_route = respx_mock.post("/v1/sessions").mock(return_value=httpx2.Response(200, json=SESSION))
+        agent: SessionAgentWithOverridesParam = {"type": "agent_with_overrides", "id": "agent_123"}
+        if not isinstance(value, Omit):
+            agent["guardrail_ids"] = value
+        client.sessions.create(environment_id="env_123", agent=agent)
+        assert json.loads(_req(session_route).content)["agent"] == {
+            "type": "agent_with_overrides",
+            "id": "agent_123",
+            **fields,
+        }
+        assert gate.called == (not isinstance(value, Omit))
+
+    @parametrize
+    @pytest.mark.parametrize("fields", [{}, {"guardrail_ids": []}, {"guardrail_ids": ["grd_example"]}])
+    @pytest.mark.respx(base_url=base_url)
+    def test_agent_response_shapes(self, client: Orca, respx_mock: MockRouter, fields: dict[str, Any]) -> None:
+        payload = {key: value for key, value in AGENT.items() if key != "guardrail_ids"}
+        payload.update(fields)
+        respx_mock.get("/v1/agents/agent_123").mock(return_value=httpx2.Response(200, json=payload))
+        for path in ("/v1/agents", "/v1/agents/agent_123/versions"):
+            respx_mock.get(path).mock(return_value=httpx2.Response(200, json={"data": [payload], "next_page": None}))
+        agents = [
+            client.agents.retrieve("agent_123"),
+            *client.agents.list().data,
+            *client.agents.versions.list("agent_123").data,
+        ]
+        for agent in agents:
+            assert agent.guardrail_ids == fields.get("guardrail_ids")
+            assert ("guardrail_ids" in agent.model_fields_set) == ("guardrail_ids" in fields)
 
     @parametrize
     @pytest.mark.respx(base_url=base_url)
@@ -127,6 +185,65 @@ class TestPolicyFields:
 
 class TestAsyncPolicyFields:
     parametrize = pytest.mark.parametrize("async_client", [False, True], indirect=True, ids=["loose", "strict"])
+
+    @parametrize
+    @pytest.mark.parametrize("value", [omit, None, [], ["grd_example"]])
+    @pytest.mark.respx(base_url=base_url, assert_all_called=False)
+    async def test_update_omission_and_replacement(
+        self, async_client: AsyncOrca, respx_mock: MockRouter, value: list[str] | None | Omit
+    ) -> None:
+        gate = _gate(respx_mock, async_client)
+        route = respx_mock.post("/v1/agents/agent_123").mock(return_value=httpx2.Response(200, json=AGENT))
+        result = await async_client.agents.update("agent_123", guardrail_ids=value)
+        assert result.guardrail_ids == ["grd_example"]
+        assert json.loads(_req(route).content) == ({} if isinstance(value, Omit) else {"guardrail_ids": value})
+        assert gate.called == (not isinstance(value, Omit))
+
+    @parametrize
+    @pytest.mark.parametrize("value", [omit, [], ["grd_example"]])
+    @pytest.mark.respx(base_url=base_url, assert_all_called=False)
+    async def test_create_and_inline_override_omission(
+        self, async_client: AsyncOrca, respx_mock: MockRouter, value: list[str] | Omit
+    ) -> None:
+        gate = _gate(respx_mock, async_client)
+        route = respx_mock.post("/v1/agents").mock(return_value=httpx2.Response(200, json=AGENT))
+        await async_client.agents.create(model="some-model", name="demo", guardrail_ids=value)
+        fields = {} if isinstance(value, Omit) else {"guardrail_ids": value}
+        assert json.loads(_req(route).content) == {"model": "some-model", "name": "demo", **fields}
+        assert gate.called == (not isinstance(value, Omit))
+
+        gate = _gate(respx_mock, async_client)
+        session_route = respx_mock.post("/v1/sessions").mock(return_value=httpx2.Response(200, json=SESSION))
+        agent: SessionAgentWithOverridesParam = {"type": "agent_with_overrides", "id": "agent_123"}
+        if not isinstance(value, Omit):
+            agent["guardrail_ids"] = value
+        await async_client.sessions.create(environment_id="env_123", agent=agent)
+        assert json.loads(_req(session_route).content)["agent"] == {
+            "type": "agent_with_overrides",
+            "id": "agent_123",
+            **fields,
+        }
+        assert gate.called == (not isinstance(value, Omit))
+
+    @parametrize
+    @pytest.mark.parametrize("fields", [{}, {"guardrail_ids": []}, {"guardrail_ids": ["grd_example"]}])
+    @pytest.mark.respx(base_url=base_url)
+    async def test_agent_response_shapes(
+        self, async_client: AsyncOrca, respx_mock: MockRouter, fields: dict[str, Any]
+    ) -> None:
+        payload = {key: value for key, value in AGENT.items() if key != "guardrail_ids"}
+        payload.update(fields)
+        respx_mock.get("/v1/agents/agent_123").mock(return_value=httpx2.Response(200, json=payload))
+        for path in ("/v1/agents", "/v1/agents/agent_123/versions"):
+            respx_mock.get(path).mock(return_value=httpx2.Response(200, json={"data": [payload], "next_page": None}))
+        agents = [
+            await async_client.agents.retrieve("agent_123"),
+            *(await async_client.agents.list()).data,
+            *(await async_client.agents.versions.list("agent_123")).data,
+        ]
+        for agent in agents:
+            assert agent.guardrail_ids == fields.get("guardrail_ids")
+            assert ("guardrail_ids" in agent.model_fields_set) == ("guardrail_ids" in fields)
 
     @parametrize
     @pytest.mark.respx(base_url=base_url)
