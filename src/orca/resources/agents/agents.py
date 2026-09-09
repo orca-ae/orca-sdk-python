@@ -201,7 +201,7 @@ class Agents(SyncAPIResource):
 
           version: Must match the agent's current version when provided.
 
-          guardrail_ids: Replace attached guardrails, or pass `None` to clear them. Requires `orca-beta`.
+          guardrail_ids: Omit to preserve attached guardrails; `None` or `[]` clears them. Requires `orca-beta`.
 
           metadata: A null value removes that individual key.
 
@@ -486,7 +486,7 @@ class AsyncAgents(AsyncAPIResource):
 
           version: Must match the agent's current version when provided.
 
-          guardrail_ids: Replace attached guardrails, or pass `None` to clear them. Requires `orca-beta`.
+          guardrail_ids: Omit to preserve attached guardrails; `None` or `[]` clears them. Requires `orca-beta`.
 
           metadata: A null value removes that individual key.
 

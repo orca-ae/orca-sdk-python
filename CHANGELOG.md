@@ -11,6 +11,9 @@
 
 ### Fixes
 
+- sync the core spec with the published TypeScript/Go contract, restoring its nine
+  `guardrail_ids` definitions; verify existing sync/async field support, omission,
+  null clearing, and session-local overrides against that contract
 - send `Accept: text/event-stream` from Session and thread SSE methods so
   content-negotiating gateways do not reject streams with HTTP 406
 

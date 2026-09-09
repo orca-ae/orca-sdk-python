@@ -6,6 +6,11 @@ contract; `tests/test_contract.py` enforces that.
 
 ## `client.agents`
 
+`create()` accepts optional `guardrail_ids`; `update()` preserves attachments when
+omitted and clears them with `None` or `[]`. Explicit values require discovery of
+`policy.runorca.ai`; callers supply the beta header through `extra_headers`. Agent
+responses, including lists and historical versions, expose optional `guardrail_ids`.
+
 | Method | Returns |
 |---|---|
 | `client.agents.archive()` | `Agent` |
@@ -16,6 +21,11 @@ contract; `tests/test_contract.py` enforces that.
 | `client.agents.versions.list()` | `SyncPageCursor[Agent]` |
 
 ## `client.sessions`
+
+`create()` accepts `guardrail_ids` on the inline `agent_with_overrides` input only.
+Omission preserves the referenced agent configuration; `[]` replaces its guardrails
+with an empty list for the session. The input is not nullable. Session response
+snapshots do not declare this field in the core contract.
 
 | Method | Returns |
 |---|---|
