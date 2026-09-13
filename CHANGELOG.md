@@ -17,6 +17,13 @@
 - send `Accept: text/event-stream` from Session and thread SSE methods so
   content-negotiating gateways do not reject streams with HTTP 406
 
+## [0.2.1](https://github.com/orca-ae/orca-sdk-python/compare/v0.2.0...v0.2.1) (2026-09-13)
+
+
+### Bug Fixes
+
+* sync guardrail contract with published SDK specs ([#20](https://github.com/orca-ae/orca-sdk-python/issues/20)) ([01f9f3a](https://github.com/orca-ae/orca-sdk-python/commit/01f9f3adf2a55fb58b79e055e3857bd2ea5231a0))
+
 ## [0.2.0](https://github.com/orca-ae/orca-sdk-python/compare/v0.1.1...v0.2.0) (2026-09-04)
 
 
