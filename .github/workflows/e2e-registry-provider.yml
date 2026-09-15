@@ -333,7 +333,9 @@ jobs:
           kubectl apply -f .ci/clusters/orca-managed-agents-postgres.yaml
           kubectl wait --for=condition=available --timeout=3m deployment/orca-managed-agents-postgres
           kubectl delete job orca-managed-agents-minio-init --ignore-not-found
-          kubectl apply -f .ci/clusters/orca-managed-agents-minio.yaml
+          # The pinned Registry fixture still points at Docker Hub; keep its release tags on Quay.
+          sed 's|image: minio/|image: quay.io/minio/|' \
+            .ci/clusters/orca-managed-agents-minio.yaml | kubectl apply -f -
           kubectl wait --for=condition=available --timeout=3m deployment/orca-managed-agents-minio
           kubectl wait --for=condition=complete --timeout=3m job/orca-managed-agents-minio-init
 

@@ -16,6 +16,11 @@ Agent and Session guardrail attachment, Model Price reads, Environment, Trigger,
 File, and Session lifecycle calls, deterministic execution with SSE replay, and
 cloud discovery where available.
 
+Both topologies pull their pinned MinIO server and client releases from
+`quay.io/minio` because anonymous Docker Hub pulls fail for these images. The
+Registry/provider workflow rewrites the image repository in its pinned Registry
+fixture before applying it, preserving the fixture's release tags.
+
 The direct workflow requires `SNBOT_GITHUB_TOKEN`. The Registry/provider workflow
 also requires `LICENSE`, `OAUTH_CLIENT_ID`, and `OAUTH_CLIENT_SECRET`. Secret-backed
 jobs skip fork pull requests.
