@@ -11,6 +11,8 @@
 
 ### Fixes
 
+- pull the pinned MinIO server and client releases from Quay in both E2E
+  topologies to avoid Docker Hub pull-access failures during infrastructure setup
 - sync the core spec with the published TypeScript/Go contract, restoring its nine
   `guardrail_ids` definitions; verify existing sync/async field support, omission,
   null clearing, and session-local overrides against that contract
