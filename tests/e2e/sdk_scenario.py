@@ -72,7 +72,13 @@ def cleanup_resources(strict: bool) -> None:
 
     session = resources.get("session")
     if session is not None:
-        if cleanup("archive session", lambda: client.sessions.archive(session.id)):
+
+        def archive_session() -> None:
+            archived = client.sessions.archive(session.id)
+            assert archived.id == session.id
+            assert archived.archived_at, "session archive did not set archived_at"
+
+        if cleanup("archive session", archive_session):
             resources.pop("session", None)
 
     agent = resources.get("agent")

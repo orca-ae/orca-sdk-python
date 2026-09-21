@@ -11,6 +11,8 @@
 
 ### Fixes
 
+- use `streamnative/registry-service:v1.0.2` for Registry/provider E2E and verify
+  that Session archive cleanup returns the matching ID and sets `archived_at`
 - pull the pinned MinIO server and client releases from Quay in both E2E
   topologies to avoid Docker Hub pull-access failures during infrastructure setup
 - sync the core spec with the published TypeScript/Go contract, restoring its nine
