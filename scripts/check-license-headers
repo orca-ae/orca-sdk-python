@@ -1,0 +1,129 @@
+#!/usr/bin/env python3
+# Copyright The Orca Authors
+# SPDX-License-Identifier: Apache-2.0
+"""Check that every source file starts with the repository license header.
+
+Usage: scripts/check-license-headers [--fix]
+
+The header is two comment lines, placed after any shebang or encoding line:
+
+    # Copyright The Orca Authors
+    # SPDX-License-Identifier: Apache-2.0
+
+The mixed-license utility module has an explicit SPDX override; it is checked,
+not excluded. Existing third-party notices remain in place.
+
+It covers Python sources and stubs, shell scripts, the scripts in scripts/, the workflow
+files and pyproject.toml. Vendored files (openapi/), documentation, data files and the attribution
+files carry no header. With --fix, the header is added wherever it is missing.
+
+Files are handled as raw bytes, so everything after the header stays exactly as it was:
+some tests embed carriage returns in string literals, and a text-mode rewrite would
+silently turn them into line breaks.
+
+Uses `git ls-files`, so it checks exactly the files git tracks.
+"""
+
+from __future__ import annotations
+
+import re
+import sys
+import subprocess
+from fnmatch import fnmatch
+from pathlib import Path
+
+HEADER = b"# Copyright The Orca Authors\n# SPDX-License-Identifier: Apache-2.0\n"
+LICENSE_OVERRIDES = {"src/orca/_utils/_utils.py": "Apache-2.0 AND MIT AND MPL-2.0"}
+EXISTING_HEADER = re.compile(rb"\A# Copyright The Orca Authors\r?\n# SPDX-License-Identifier: [^\r\n]+\r?\n")
+
+INCLUDE = ["*.py", "*.pyi", "*.sh", "scripts/*", ".github/workflows/*.yml", "pyproject.toml"]
+EXCLUDE = ["openapi/*"]
+
+# Lines that have to stay first: a shebang, or a PEP 263 encoding declaration.
+PREAMBLE = re.compile(rb"^(#!|#.*coding[:=])")
+
+ROOT = Path(__file__).resolve().parent.parent
+
+
+def tracked_files() -> list[str]:
+    out = subprocess.run(["git", "ls-files", "-z"], cwd=ROOT, check=True, capture_output=True, text=True).stdout
+    return [path for path in out.split("\0") if path]
+
+
+def in_scope(path: str) -> bool:
+    if any(fnmatch(path, pattern) for pattern in EXCLUDE):
+        return False
+    return any(fnmatch(path, pattern) for pattern in INCLUDE)
+
+
+def split_preamble(data: bytes) -> tuple[bytes, bytes]:
+    """Split off up to two leading shebang or encoding lines, keeping every byte."""
+    end = 0
+    for _ in range(2):
+        newline = data.find(b"\n", end)
+        line_end = len(data) if newline == -1 else newline + 1
+        if not PREAMBLE.match(data[end:line_end]):
+            break
+        end = line_end
+    return data[:end], data[end:]
+
+
+def expected_header(path: str) -> bytes:
+    license_id = LICENSE_OVERRIDES.get(path)
+    if license_id is None:
+        return HEADER
+    return f"# Copyright The Orca Authors\n# SPDX-License-Identifier: {license_id}\n".encode()
+
+
+def has_header(data: bytes, path: str) -> bool:
+    _, rest = split_preamble(data)
+    return rest.startswith(expected_header(path))
+
+
+def with_header(data: bytes, path: str) -> bytes:
+    preamble, rest = split_preamble(data)
+    if preamble and not preamble.endswith(b"\n"):
+        preamble += b"\n"
+    header = expected_header(path)
+    existing = EXISTING_HEADER.match(rest)
+    if existing is not None:
+        return preamble + header + rest[existing.end() :]
+    # A blank line separates the header from whatever the file starts with.
+    separator = b"\n" if rest and not rest.startswith((b"\n", b"\r\n")) else b""
+    return preamble + header + separator + rest
+
+
+def main(args: list[str]) -> int:
+    if args not in ([], ["--fix"]):
+        print(__doc__, file=sys.stderr)
+        return 2
+    fix = args == ["--fix"]
+
+    missing: list[str] = []
+    for path in tracked_files():
+        file = ROOT / path
+        if not in_scope(path) or file.is_symlink() or not file.is_file():
+            continue
+        data = file.read_bytes()
+        if has_header(data, path):
+            continue
+        if fix:
+            file.write_bytes(with_header(data, path))
+            print(f"added the license header: {path}")
+        else:
+            missing.append(path)
+
+    if missing:
+        print("files missing the license header:")
+        for path in missing:
+            print(f"  {path}")
+        print("\nerror: run ./scripts/check-license-headers --fix to add it.", file=sys.stderr)
+        return 1
+
+    if not fix:
+        print("license header check passed")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv[1:]))

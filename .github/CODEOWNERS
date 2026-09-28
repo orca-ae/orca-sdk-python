@@ -1,0 +1,17 @@
+# Code owners review pull requests that touch their paths.
+# The last matching pattern wins, so more specific paths come later in this file.
+
+# Every pull request needs a review from one of these.
+*                         @sijie @freeznet @jiangpengcheng @tuteng
+
+# Licensing, governance, contributor and agent policy, the vendored API contracts, and repository
+# automation.
+/LICENSE                  @sijie
+/NOTICE                   @sijie
+/THIRD_PARTY_NOTICES      @sijie
+/README.md                @sijie
+/CONTRIBUTING.md          @sijie
+/AI_POLICY.md             @sijie
+/AGENTS.md                @sijie
+/openapi/                 @sijie
+/.github/                 @sijie

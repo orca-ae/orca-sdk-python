@@ -1,0 +1,17 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Ask a question
+    url: https://github.com/orca-ae/orca-sdk-python/discussions/categories/q-a
+    about: Questions about using the Python SDK belong in GitHub Discussions.
+  - name: Share an idea
+    url: https://github.com/orca-ae/orca-sdk-python/discussions/categories/ideas
+    about: Open-ended ideas and design discussions, before they become a feature request.
+  - name: Report a security vulnerability
+    url: https://github.com/orca-ae/orca-sdk-python/security/advisories/new
+    about: Please report security issues privately, not in a public issue.
+  - name: Report an engine (server) bug
+    url: https://github.com/orca-ae/orca-agent-engine/issues
+    about: If the server misbehaves no matter which client sends the request, report it on the engine repository.
+  - name: Documentation
+    url: https://runorca.ai
+    about: Guides and API documentation for Orca.
