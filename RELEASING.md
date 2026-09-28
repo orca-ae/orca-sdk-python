@@ -55,7 +55,9 @@ exact tag.
 
 ## Typical flow
 
-1. **Land work on `main`** using conventional commit messages.
+1. **Land work on `main`** by squash-merging a PR with a Conventional Commit title.
+   The squash commit title is what release-please parses; a title such as
+   `Merge pull request #123 ...` is not a Conventional Commit.
 2. **release-please opens a Release PR** titled `release: X.Y.Z`, on every push to `main`
    and once a day at 05:00 UTC. It bumps `pyproject.toml`, regenerates `CHANGELOG.md`, and
    keeps updating the same PR as more commits land. A follow-up step pushes a
@@ -67,6 +69,29 @@ exact tag.
 4. **Repeat.** release-please starts a fresh Release PR as soon as the next commit lands.
 
 Nothing else needs doing — there is no manual version bump and no hand-edited changelog.
+
+### Bootstrapping the first public release
+
+The initial import has version `0.2.1` in `.release-please-manifest.json` and
+`pyproject.toml`, but that does not create a tag or GitHub Release. The first public
+release uses the same Release PR flow as subsequent releases:
+
+1. Squash-merge the bootstrap PR with its `feat:` title intact. With the `0.2.1`
+   manifest baseline and the current versioning settings, this requests `0.3.0`.
+2. **Create releases** opens the `release: 0.3.0` PR and refreshes `uv.lock` on its
+   branch. Review its version, changelog, and CI results before merging.
+3. Merge that Release PR to create `v0.3.0`, the GitHub Release, and the wheel and
+   sdist assets. Merging the bootstrap PR alone does not publish the package.
+
+If **Create releases** succeeds without opening a PR, inspect its log for
+`commit could not be parsed` and `Considering: 0 commits`. A history containing only
+an initial commit and a non-conventional merge commit can produce this result even
+when the merged PR had a `feat:` title. Re-running the workflow without a new
+parseable commit does not change the result.
+
+Do not run **Publish release** with a version that has not been released: it cannot
+create the missing tag and fails at checkout. Use **Create releases** for the
+Release PR flow, and **Publish release** only to rebuild an existing release.
 
 ## Create releases workflow (`create-releases.yml`)
 
