@@ -7,14 +7,24 @@ Documentation lives at [runorca.ai](https://runorca.ai).
 
 ## Installation
 
-Install the SDK straight from this repository:
+Install the SDK from PyPI:
 
 ```sh
-pip install "orca-sdk @ git+https://github.com/orca-ae/orca-sdk-python"
+pip install runorca
 ```
 
-Append `@<tag or commit>` to the URL to pin a version. The package you import is `orca`,
-and Python 3.10 or later is required.
+The distribution is named `runorca`, but the package you import is still `orca`.
+Python 3.10 or later is required.
+
+To install unreleased changes straight from this repository:
+
+```sh
+pip install "runorca @ git+https://github.com/orca-ae/orca-sdk-python"
+```
+
+Append `@<tag or commit>` to the URL to pin a version. If you previously installed
+this SDK from Git as `orca-sdk`, uninstall that distribution before installing
+`runorca`; both distributions install the same `orca` import package.
 
 > **Note:** do not run `pip install orca-sdk` — that name belongs to an unrelated
 > package on public PyPI.

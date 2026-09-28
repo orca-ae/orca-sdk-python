@@ -1,12 +1,15 @@
 # Releasing
 
-The SDK is distributed as wheel + sdist assets attached to
-[GitHub Releases](https://github.com/orca-ae/orca-sdk-python/releases). Releases are
-driven by two workflows in `.github/workflows/`:
+The SDK is published to [PyPI as `runorca`](https://pypi.org/project/runorca/), with
+the same wheel and sdist attached to
+[GitHub Releases](https://github.com/orca-ae/orca-sdk-python/releases). The Python
+import remains `orca`.
 
-- **`create-releases.yml`** — runs [release-please], which opens and maintains a Release
-  PR; merging that PR tags the release and publishes the artifacts.
-- **`publish-release.yml`** — manual re-run of just the build-and-attach step.
+**Release** (`.github/workflows/release.yml`) runs [release-please], which opens and
+maintains a Release PR. Merging that PR creates the tag and GitHub Release, then
+builds and publishes the distributions. The same workflow supports manual retries
+for an existing release tag. It replaces `create-releases.yml` and
+`publish-release.yml`; those old workflow names are no longer publishing entry points.
 
 [release-please]: https://github.com/googleapis/release-please
 
@@ -33,7 +36,7 @@ pre-1.0 SDK, where a breaking change should not burn the major version.
 marked `hidden: true`, and release-please treats hidden types as non-user-facing: it skips
 the release rather than cutting one with an empty changelog. The workflow still succeeds,
 so a green run does not mean a release happened. If you expected one and got nothing, look
-for this line in the **Create releases** log:
+for this line in the **Release** workflow's **Prepare release** log:
 
 ```
 ✔ Considering: 1 commits
@@ -41,7 +44,8 @@ for this line in the **Create releases** log:
 ```
 
 To ship a release whose commits are all hidden types, add a `Release-As: X.Y.Z` footer to
-one of them.
+the final squash commit message. A footer present only in a branch commit or PR body
+does not help if the squash merge discards it.
 
 **The version lives in exactly one place: `[project].version` in `pyproject.toml`.**
 `src/orca/_version.py` derives `__version__` from the installed distribution's metadata
@@ -64,8 +68,9 @@ exact tag.
    `chore: sync uv.lock with the release version` commit to that branch.
 3. **Review and merge the Release PR** when you want to ship. Merging it:
    - creates the tag `vX.Y.Z` and the GitHub Release,
-   - triggers the build, which attaches `orca_sdk-X.Y.Z-py3-none-any.whl` and
-     `orca_sdk-X.Y.Z.tar.gz` to that release.
+   - builds and validates `runorca-X.Y.Z-py3-none-any.whl` and `runorca-X.Y.Z.tar.gz`,
+   - publishes them to PyPI through Trusted Publishing, then attaches the same files
+     to the GitHub Release.
 4. **Repeat.** release-please starts a fresh Release PR as soon as the next commit lands.
 
 Nothing else needs doing — there is no manual version bump and no hand-edited changelog.
@@ -78,22 +83,23 @@ release uses the same Release PR flow as subsequent releases:
 
 1. Squash-merge the bootstrap PR with its `feat:` title intact. With the `0.2.1`
    manifest baseline and the current versioning settings, this requests `0.3.0`.
-2. **Create releases** opens the `release: 0.3.0` PR and refreshes `uv.lock` on its
+2. **Release** opens the `release: 0.3.0` PR and refreshes `uv.lock` on its
    branch. Review its version, changelog, and CI results before merging.
-3. Merge that Release PR to create `v0.3.0`, the GitHub Release, and the wheel and
-   sdist assets. Merging the bootstrap PR alone does not publish the package.
+3. Before merging, ensure the PyPI publishing changes are on `main` and the Release
+   PR includes them: its distribution must be `runorca`, and the workflow must be
+   `release.yml`. Merge that Release PR to create `v0.3.0`, the GitHub Release, and
+   the PyPI release. Merging the bootstrap PR alone does not publish the package.
 
-If **Create releases** succeeds without opening a PR, inspect its log for
+If **Prepare release** succeeds without opening a PR, inspect its log for
 `commit could not be parsed` and `Considering: 0 commits`. A history containing only
 an initial commit and a non-conventional merge commit can produce this result even
 when the merged PR had a `feat:` title. Re-running the workflow without a new
 parseable commit does not change the result.
 
-Do not run **Publish release** with a version that has not been released: it cannot
-create the missing tag and fails at checkout. Use **Create releases** for the
-Release PR flow, and **Publish release** only to rebuild an existing release.
+Do not supply a manual `tag` for a version that has not been released: retries
+require an existing tag and GitHub Release. Leave `tag` empty for the Release PR flow.
 
-## Create releases workflow (`create-releases.yml`)
+## Release workflow (`release.yml`)
 
 **Triggers:**
 
@@ -101,32 +107,56 @@ Release PR flow, and **Publish release** only to rebuild an existing release.
 |------|---------|
 | Every push to `main` | `push` |
 | Daily 05:00 UTC | `schedule` cron |
-| On demand | `workflow_dispatch` (no inputs) |
+| On demand | `workflow_dispatch` (optional `tag`) |
 
-Guarded by `if: github.repository == 'orca-ae/orca-sdk-python'` so a fork can never cut a
-release.
+Preparation is guarded by repository `orca-ae/orca-sdk-python` and ref
+`refs/heads/main`. Select **main** when manually running the workflow; other
+branches and forks cannot drive publishing. Downstream jobs require preparation
+to succeed and return a release tag.
 
 **What it does:**
 
-1. Runs `googleapis/release-please-action@v4` against `release-please-config.json` and
-   `.release-please-manifest.json`.
-2. If a Release PR was opened or updated — checks out that branch, runs `uv lock`, and
-   pushes a commit if `uv.lock` changed. See "Why the uv.lock step exists" below.
-3. If merging the Release PR created a release — checks out the new tag, runs
-   `./scripts/publish-release` to build and attach the artifacts.
+1. **Prepare release** runs `googleapis/release-please-action@v4` against
+   `release-please-config.json` and `.release-please-manifest.json`. If it opens or
+   updates a Release PR, it refreshes `uv.lock` on that branch. With a manual `tag`,
+   it skips release-please and passes that tag directly to the build.
+2. **Build and verify distributions** requires an existing GitHub Release and
+   checks out `refs/tags/<tag>`, never a branch of the same name.
+   `./scripts/build-release` builds with `uv build --no-sources`, checks both
+   archives for the `runorca` name and matching tag version, verifies packaged
+   licenses, and installs/imports the wheel in a fresh environment. This job has
+   only `contents: read` and no OIDC permission.
+3. **Publish runorca to PyPI** downloads those artifacts without checking out or
+   executing repository code. Only this job has `id-token: write`. It runs
+   `uv publish --trusted-publishing always --check-url https://pypi.org/simple`,
+   requiring OIDC rather than falling back to a stored token.
+4. **Attach the published distributions to GitHub** downloads the same artifacts
+   and uploads them with `gh release upload --clobber`. It runs only after PyPI
+   succeeds and has `contents: write`, but no OIDC permission.
 
-## Publish release workflow (`publish-release.yml`)
+This stays in a single workflow: tags created with `GITHUB_TOKEN` do not trigger
+other workflows. Publishing does not depend on a tag-push or release event.
 
-**Triggers:** `workflow_dispatch` only.
+## Retrying a publication
 
 | Input | Required | Purpose |
 |-------|----------|---------|
-| `tag` | yes | Tag to build from and attach artifacts to, e.g. `v0.1.0` |
+| `tag` | no | Existing release tag to retry, e.g. `v0.3.0`; empty runs release-please |
 
-Use it when the release exists but has no artifacts — the publish step failed, or the tag
-was created by hand. It checks out the given tag (never `main`) and runs the same
-`./scripts/publish-release`. `gh release upload --clobber` makes a re-run idempotent, so
-running it twice is safe.
+Prefer **Re-run failed jobs** on the original run: it reuses the already-built
+artifact. If a new run is needed, use **Release → Run workflow**, select `main`,
+and supply the existing tag. The tag must contain the `runorca` packaging and
+release scripts; historical tags for the old distribution cannot be published
+as `runorca` without a new version.
+
+uv skips files only when their bytes match the files already on PyPI. Different
+contents under an existing filename fail rather than silently mixing artifacts.
+If a rebuild differs after a partial upload, retry the original artifacts or cut
+a new release; do not delete and attempt to reuse a PyPI filename. GitHub assets
+are attached only after PyPI accepts or verifies the same files.
+
+The build sets `SOURCE_DATE_EPOCH` from the tag commit to stabilize timestamps,
+but dependencies or build-tool changes can still affect a later rebuild.
 
 ## Why the uv.lock step exists
 
@@ -134,7 +164,7 @@ running it twice is safe.
 
 ```toml
 [[package]]
-name = "orca-sdk"
+name = "runorca"
 version = "0.1.0"
 source = { editable = "." }
 ```
@@ -145,25 +175,29 @@ lock fails CI on the Release PR — the refresh step keeps the PR self-consisten
 anyone reviews it.
 
 `requirements-dev.lock` is unaffected: it pins `-e .` with no version and mentions
-`orca-sdk` only in `# via` comments.
+`runorca` only in `# via` comments.
 
 ## Consuming the package
 
-Download a release's wheel from its GitHub Release, or install straight from the
-repository:
+Install from PyPI, or download the same wheel from the GitHub Release:
 
 ```sh
-pip install "orca-sdk @ git+https://github.com/orca-ae/orca-sdk-python"
+pip install runorca
+python -c 'import orca; print(orca.__version__)'
 ```
 
-Append `@<tag or commit>` to the URL to pin a version.
+Use `runorca==X.Y.Z` to pin a release. For unreleased changes, install
+`"runorca @ git+https://github.com/orca-ae/orca-sdk-python@<commit>"`.
+If this SDK was previously installed from Git as `orca-sdk`, uninstall that old
+distribution first: installing both distributions creates overlapping `orca` files.
 
 Do **not** run `pip install orca-sdk` — that name belongs to an unrelated package on
 public PyPI.
 
 ## Required secrets / settings
 
-Both workflows work with the default `secrets.GITHUB_TOKEN`. One optional secret matters:
+GitHub release operations work with the default `secrets.GITHUB_TOKEN`. One optional
+secret matters:
 
 - **The release bot token (`SNBOT_GITHUB_TOKEN`)** — a PAT or GitHub App token with `contents: write` and
   `pull-requests: write`. GitHub does not run workflows for a PR opened by
@@ -174,13 +208,42 @@ Both workflows work with the default `secrets.GITHUB_TOKEN`. One optional secret
 If `main` is protected, the token also needs to be allowed to push the `uv.lock` commit to
 the Release PR branch.
 
+### PyPI Trusted Publisher
+
+Configure these exact values in the PyPI account's **Publishing** page for the
+pending project (or the project's **Publishing** settings after the first upload):
+
+| Field | Value |
+|-------|-------|
+| PyPI project | `runorca` |
+| GitHub repository owner | `orca-ae` |
+| GitHub repository name | `orca-sdk-python` |
+| Workflow filename | `release.yml` |
+| Environment name | empty / Any |
+
+No `PYPI_API_TOKEN` secret is needed. The workflow does not declare a GitHub
+environment, matching the current publisher. Adding an environment with review
+protection is a useful future hardening step, but must be coordinated with the
+PyPI publisher settings.
+
+A pending publisher does not reserve the name. The first successful publication
+creates `runorca` and converts the publisher to a normal project publisher.
+
+References: [PyPI pending publishers][pending-publishers],
+[Trusted Publishing permissions][trusted-publishing], and
+[uv publishing and hash-checked retries][uv-publishing]. uv does not generate
+attestations itself; this workflow does not claim to produce signed attestations.
+
+[pending-publishers]: https://docs.pypi.org/trusted-publishers/creating-a-project-through-oidc/
+[trusted-publishing]: https://docs.pypi.org/trusted-publishers/using-a-publisher/
+[uv-publishing]: https://docs.astral.sh/uv/guides/package/#publishing-your-package
+
 ## Operational guidance
 
-- **A release with no artifacts** means the publish step failed after the tag was created.
-  Fix the cause, then run **Publish release** with that tag rather than re-cutting.
-- **Re-publishing.** `gh release upload --clobber` overwrites assets in place, so a botched
-  build can be replaced without a new version. Prefer a new patch release if the *code* was
-  wrong, not just the upload.
+- **A release with no artifacts** can mean the build, PyPI upload, or GitHub upload
+  failed after tagging. Check the failed job, fix the cause, and retry as above.
+- **Re-publishing.** GitHub assets can be overwritten, but PyPI files are immutable.
+  A code or artifact change requires a new version, not an in-place replacement.
 - **Don't hand-edit `CHANGELOG.md` above the `## 0.1.0` entry.** release-please owns
   everything it generates and will rewrite it. The `## 0.1.0` prose block predates the
   automation and stays untouched.

@@ -1,0 +1,31 @@
+#!/usr/bin/env bash
+# Copyright The Orca Authors
+# SPDX-License-Identifier: Apache-2.0
+
+set -euo pipefail
+cd "$(dirname "$0")/.."
+
+# Build and verify without publishing credentials. CI checks out the exact tag.
+: "${TAG:?TAG must be set (e.g. v0.3.0)}"
+SOURCE_DATE_EPOCH=$(git log -1 --format=%ct)
+export SOURCE_DATE_EPOCH
+
+rm -rf dist
+uv build --no-sources
+python3 scripts/check-release-artifacts "$TAG" dist/*.whl dist/*.tar.gz
+python3 scripts/check-package-licenses dist/*.whl dist/*.tar.gz
+
+# Use a clean environment, not the editable install in the development venv.
+verify_dir=$(mktemp -d)
+trap 'rm -rf "$verify_dir"' EXIT
+uv venv "$verify_dir/venv"
+uv pip install --python "$verify_dir/venv/bin/python" dist/*.whl
+"$verify_dir/venv/bin/python" - "$TAG" <<'PY'
+import sys
+from importlib.metadata import version
+
+import orca
+
+assert orca.__version__ == version("runorca") == sys.argv[1][1:]
+print(f"Verified runorca {orca.__version__}: import orca")
+PY

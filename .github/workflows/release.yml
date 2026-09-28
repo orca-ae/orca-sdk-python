@@ -1,0 +1,164 @@
+# Copyright The Orca Authors
+# SPDX-License-Identifier: Apache-2.0
+
+name: Release
+
+on:
+  schedule:
+    - cron: '0 5 * * *' # every day at 5am UTC
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Existing release tag to retry (leave empty to prepare a Release PR)"
+        required: false
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+# Pinned so the `uv lock` refresh below produces the same lock a developer would. Left
+# unpinned, runners pick up whatever uv is newest and rewrite dependency markers, adding
+# unrelated churn to every Release PR.
+env:
+  UV_VERSION: '0.12.7'
+
+jobs:
+  prepare:
+    name: Prepare release
+    # Only main may drive publishing; manual retries still build the specified tag.
+    if: github.repository == 'orca-ae/orca-sdk-python' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    outputs:
+      tag: ${{ steps.release.outputs.release_created == 'true' && steps.release.outputs.tag_name || inputs.tag }}
+
+    steps:
+      - uses: googleapis/release-please-action@v4
+        id: release
+        if: ${{ !inputs.tag }}
+        with:
+          # A PR opened by GITHUB_TOKEN does not trigger workflow runs, so the Release
+          # PR would get no CI. SNBOT_GITHUB_TOKEN avoids that; the fallback keeps the
+          # workflow functional (without CI on the PR) if the secret is absent.
+          token: ${{ secrets.SNBOT_GITHUB_TOKEN || secrets.GITHUB_TOKEN }}
+          config-file: release-please-config.json
+          manifest-file: .release-please-manifest.json
+
+      # `uv.lock` records the project's own version in its root package entry, and
+      # release-please only knows about pyproject.toml. Without this the lock trails the
+      # bump by one version and `uv lock --check` in ./scripts/lint fails the Release PR.
+      - name: Check out the Release PR branch
+        if: ${{ steps.release.outputs.pr }}
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ fromJSON(steps.release.outputs.pr).headBranchName }}
+          token: ${{ secrets.SNBOT_GITHUB_TOKEN || secrets.GITHUB_TOKEN }}
+
+      - name: Install uv
+        if: ${{ steps.release.outputs.pr }}
+        uses: astral-sh/setup-uv@v5
+        with:
+          version: ${{ env.UV_VERSION }}
+          enable-cache: true
+
+      - name: Refresh uv.lock on the Release PR
+        if: ${{ steps.release.outputs.pr }}
+        run: |
+          uv lock
+          if git diff --quiet -- uv.lock; then
+            echo "uv.lock is already in step with pyproject.toml"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add uv.lock
+          git commit -m "chore: sync uv.lock with the release version"
+          git push
+
+  build:
+    name: Build and verify distributions
+    needs: prepare
+    if: ${{ needs.prepare.outputs.tag != '' }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    env:
+      TAG: ${{ needs.prepare.outputs.tag }}
+    steps:
+      - name: Require an existing GitHub Release
+        run: gh release view "$TAG" --repo "$GH_REPO"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+
+      - name: Check out the release tag
+        uses: actions/checkout@v4
+        with:
+          ref: refs/tags/${{ needs.prepare.outputs.tag }}
+          persist-credentials: false
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          version: ${{ env.UV_VERSION }}
+          enable-cache: true
+
+      - name: Build, validate, and smoke-test
+        run: ./scripts/build-release
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: release-distributions
+          path: |
+            dist/*.whl
+            dist/*.tar.gz
+          if-no-files-found: error
+          overwrite: true
+
+  pypi:
+    name: Publish runorca to PyPI
+    needs: build
+    runs-on: ubuntu-latest
+    # No checkout, build scripts, or repository write permission in the OIDC job.
+    # PyPI trusts this exact file: orca-ae/orca-sdk-python / release.yml.
+    permissions:
+      id-token: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: release-distributions
+          path: dist
+      - uses: astral-sh/setup-uv@v5
+        with:
+          version: ${{ env.UV_VERSION }}
+          enable-cache: false
+      - name: Publish with Trusted Publishing
+        # Retries skip only byte-identical files; conflicting uploads fail.
+        run: uv publish --trusted-publishing always --check-url https://pypi.org/simple dist/*.whl dist/*.tar.gz
+
+  github-release:
+    name: Attach the published distributions to GitHub
+    needs: [prepare, pypi]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: release-distributions
+          path: dist
+      - name: Attach the same files that passed PyPI hash checks
+        run: gh release upload "$TAG" dist/*.whl dist/*.tar.gz --clobber
+        env:
+          TAG: ${{ needs.prepare.outputs.tag }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
