@@ -3,6 +3,14 @@
 Versions up to 0.2.0 predate this repository's public history, so they have no tags or
 releases here.
 
+## [0.3.0](https://github.com/orca-ae/orca-sdk-python/compare/v0.2.1...v0.3.0) (2026-09-28)
+
+
+### Features
+
+* prepare initial public release ([#2](https://github.com/orca-ae/orca-sdk-python/issues/2)) ([076cc94](https://github.com/orca-ae/orca-sdk-python/commit/076cc9491f16cd5849043aa46a6f4cead7be5dd8))
+* publish runorca to PyPI with trusted publishing ([#4](https://github.com/orca-ae/orca-sdk-python/issues/4)) ([5267723](https://github.com/orca-ae/orca-sdk-python/commit/5267723207c5ad4e8784eb367d70c8359ceb0af8))
+
 ## [0.2.1](https://github.com/orca-ae/orca-sdk-python/compare/v0.2.0...v0.2.1) (2026-09-28)
 
 
