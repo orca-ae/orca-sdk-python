@@ -5,7 +5,7 @@ from __future__ import annotations
 
 from importlib.metadata import PackageNotFoundError, version as _metadata_version
 
-__title__ = "orca-sdk"
+__title__ = "runorca"
 
 try:
     # Single source of truth: the version declared in `pyproject.toml` and recorded

@@ -1,0 +1,63 @@
+#!/usr/bin/env python3
+# Copyright The Orca Authors
+# SPDX-License-Identifier: Apache-2.0
+"""Reject incomplete releases or artifacts for the wrong distribution or tag."""
+
+from __future__ import annotations
+
+import sys
+import tarfile
+import zipfile
+from email import message_from_bytes
+from pathlib import Path
+
+
+def read_metadata(path: Path) -> bytes:
+    if path.name.endswith(".whl"):
+        with zipfile.ZipFile(path) as wheel:
+            names = [name for name in wheel.namelist() if name.endswith(".dist-info/METADATA")]
+            if len(names) != 1:
+                raise ValueError("expected one wheel metadata file")
+            return wheel.read(names[0])
+    with tarfile.open(path) as sdist:
+        members = [
+            member for member in sdist.getmembers() if member.name.count("/") == 1 and member.name.endswith("/PKG-INFO")
+        ]
+        if len(members) != 1 or not members[0].isfile():
+            raise ValueError("expected one source distribution metadata file")
+        file = sdist.extractfile(members[0])
+        if file is None:
+            raise ValueError("cannot read source distribution metadata")
+        with file:
+            return file.read()
+
+
+def main(args: list[str]) -> int:
+    if not args or not args[0].startswith("v") or len(args[0]) == 1:
+        print("usage: scripts/check-release-artifacts vVERSION WHEEL SDIST", file=sys.stderr)
+        return 2
+    version = args[0][1:]
+    paths = [Path(arg) for arg in args[1:]]
+    if (
+        len(paths) != 2
+        or sum(p.name.endswith(".whl") for p in paths) != 1
+        or sum(p.name.endswith(".tar.gz") for p in paths) != 1
+    ):
+        print("expected one wheel and one source distribution", file=sys.stderr)
+        return 1
+    for path in paths:
+        try:
+            metadata = message_from_bytes(read_metadata(path))
+            if metadata.get_all("Name") != ["runorca"] or metadata.get_all("Version") != [version]:
+                raise ValueError(f"expected runorca {version}, got {metadata.get('Name')} {metadata.get('Version')}")
+            if not path.name.startswith(f"runorca-{version}-") and path.name != f"runorca-{version}.tar.gz":
+                raise ValueError("filename does not match distribution metadata")
+        except (OSError, KeyError, ValueError, tarfile.TarError, zipfile.BadZipFile) as exc:
+            print(f"{path}: release verification failed: {exc}", file=sys.stderr)
+            return 1
+        print(f"{path}: verified runorca {version}")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv[1:]))

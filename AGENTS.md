@@ -1,6 +1,6 @@
 # orca-sdk-python — agent contributor guide
 
-This guide is for any contributor (human or AI) adding code to `orca-sdk`. It captures the
+This guide is for any contributor (human or AI) adding code to `runorca`. It captures the
 conventions every contribution is expected to follow.
 
 ## 1. Source of truth
@@ -176,7 +176,7 @@ never raised.
 
 - Clients: `Orca`, `AsyncOrca`.
 - Environment variables: `ORCA_API_KEY`, `ORCA_BASE_URL`, `ORCA_LOG`. That is the whole list.
-- Distribution `orca-sdk`; import `orca`.
+- Distribution `runorca`; import `orca`.
 
 ## 12. Docstrings
 
