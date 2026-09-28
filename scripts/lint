@@ -1,0 +1,28 @@
+#!/usr/bin/env bash
+# Copyright The Orca Authors
+# SPDX-License-Identifier: Apache-2.0
+
+set -euo pipefail
+cd "$(dirname "$0")/.."
+
+echo "==> Running branding check"
+./scripts/check-branding
+
+echo "==> Checking license headers"
+./scripts/check-license-headers
+
+# `uv.lock` records the project's own version, so it drifts whenever the version in
+# pyproject.toml is bumped. Catching that here keeps the release PR honest.
+echo "==> Checking uv.lock is up to date"
+uv lock --check
+
+echo "==> Running ruff"
+uv run ruff check .
+uv run ruff format --check .
+
+echo "==> Running type checks"
+uv run pyright
+uv run mypy .
+
+echo "==> Verifying the package imports cleanly"
+uv run python -c 'import orca'

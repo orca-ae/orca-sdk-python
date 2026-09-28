@@ -1,0 +1,67 @@
+# Copyright The Orca Authors
+# SPDX-License-Identifier: Apache-2.0
+
+name: CI
+
+on:
+  # No base-branch filter: PRs in a stack target the branch below them, not `main`,
+  # and a filtered trigger would silently give those PRs no checks at all.
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+# Pinned so every runner resolves `uv.lock` identically. Left unpinned, runners pick up
+# whatever uv is newest, and a newer uv rewrites dependency markers — which lands as
+# unexplained churn in whichever PR happens to run `uv lock` next.
+env:
+  UV_VERSION: '0.12.7'
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+        with:
+          version: ${{ env.UV_VERSION }}
+          enable-cache: true
+      - run: uv sync --all-groups
+      - run: ./scripts/lint
+
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ['3.10', '3.13']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+        with:
+          version: ${{ env.UV_VERSION }}
+          enable-cache: true
+      - run: uv sync --all-groups
+        env:
+          UV_PYTHON: ${{ matrix.python-version }}
+      - run: ./scripts/test
+        env:
+          UV_PYTHON: ${{ matrix.python-version }}
+
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+        with:
+          version: ${{ env.UV_VERSION }}
+          enable-cache: true
+      - run: uv build
+      - name: Verify packaged licenses and notices
+        run: ./scripts/check-package-licenses dist/*.whl dist/*.tar.gz
+      - name: Verify the built wheel imports cleanly
+        run: |
+          uv venv /tmp/verify
+          VIRTUAL_ENV=/tmp/verify uv pip install dist/*.whl
+          /tmp/verify/bin/python -c 'import orca; print(orca.__version__)'

@@ -1,0 +1,89 @@
+#!/usr/bin/env bash
+# Copyright The Orca Authors
+# SPDX-License-Identifier: Apache-2.0
+
+# Fails if an upstream vendor, product, or third-party-SDK identifier, or the name of the
+# company that stewards this project, appears in the repo (AGENTS.md §2).
+#
+# Uses `git grep`, so it scans exactly the files git tracks and cannot drift from
+# what we ship.
+set -euo pipefail
+cd "$(dirname "$0")/.."
+
+# The terms this gate looks for, base64-encoded so this file doesn't spell them out and trip
+# other scanners. Decode one with: printf '%s' <term> | base64 -d
+TERMS_B64=(
+  YW50aHJvcGlj
+  c3RhaW5sZXNz
+  Y2xhdWRl
+  YmVkcm9jaw==
+  dmVydGV4
+  c3RyZWFtbmF0aXZl
+)
+
+# Lines carrying this marker are protocol constants, exempt by design.
+MARKER="wire-value"
+
+pattern=""
+for t in "${TERMS_B64[@]}"; do
+  decoded=$(printf '%s' "$t" | base64 -d)
+  pattern="${pattern:+$pattern|}$decoded"
+done
+
+# Exempt paths, each for a reason stated in AGENTS.md §2:
+#   - `openapi/`: generated artifacts vendored from the server. The contract legitimately
+#     names compatibility headers and provider enum values we neither choose nor send.
+#   - `LICENSE*`, `NOTICE`, `THIRD_PARTY*`: attribution files. Code copied from other
+#     projects is credited there by name, and attribution beats naming rules.
+#   - `tests/e2e/dependencies.env`: the direct E2E suite's dependency pins. They name the
+#     images and source repository the suite pulls, which are identifiers we don't choose.
+#   - lockfiles: generated, and they only list dependency names.
+#
+# A single line may also be exempted with the `wire-value` marker, for a protocol
+# constant the server defines and we must send verbatim. That is the only in-source
+# escape hatch, it is per-line rather than per-file, and every active use is printed
+# below so exemptions stay visible instead of quietly accumulating.
+#
+# git grep exits 0 on match, 1 on no-match, >1 on error. Distinguishing all three
+# means a broken invocation can never be mistaken for a clean result.
+set +e
+matches=$(git grep -nIiE "$pattern" -- \
+  ':!openapi/' \
+  ':!scripts/check-branding' \
+  ':!LICENSE*' \
+  ':!NOTICE' \
+  ':!THIRD_PARTY*' \
+  ':!tests/e2e/dependencies.env' \
+  ':!uv.lock' \
+  ':!requirements-dev.lock')
+status=$?
+set -e
+
+if [ "$status" -gt 1 ]; then
+  echo "error: branding scan failed to run (git grep exit $status)" >&2
+  exit 2
+fi
+
+# Split matches into exempted (carrying the marker) and real violations.
+exempt=$(printf '%s\n' "$matches" | grep -F "$MARKER" || true)
+matches=$(printf '%s\n' "$matches" | grep -Fv "$MARKER" || true)
+if [ -z "$matches" ]; then
+  status=1
+fi
+
+if [ -n "$exempt" ]; then
+  echo "protocol-constant exemptions in force ($(printf '%s\n' "$exempt" | wc -l | tr -d ' ')):"
+  printf '%s\n' "$exempt" | sed 's/^/  /'
+  echo ""
+fi
+
+if [ "$status" -eq 0 ]; then
+  echo "$matches"
+  echo ""
+  echo "error: upstream vendor or steward identifiers found (see matches above)." >&2
+  echo "This SDK must not reference an upstream vendor, product, or third-party SDK, or the" >&2
+  echo "company that stewards it, outside the attribution files. See AGENTS.md §2." >&2
+  exit 1
+fi
+
+echo "branding check passed: no upstream vendor or steward identifiers in tracked files"

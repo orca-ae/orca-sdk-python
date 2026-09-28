@@ -1,0 +1,233 @@
+# Copyright The Orca Authors
+# SPDX-License-Identifier: Apache-2.0
+
+# Runs the SDK against the engine installed with Helm on a Kind cluster, connected directly
+# with a workspace API key. The suite needs private sources and credentials, so it runs only
+# where repository secrets are available; see tests/e2e/README.md.
+#
+# This repository is public and so are its logs. Dependency pins live in
+# tests/e2e/dependencies.env and credentials in secrets. Deployment and build output goes to
+# files that are never printed or uploaded.
+name: E2E - Managed Agents direct
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  schedule:
+    - cron: '30 18 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  UV_VERSION: '0.12.7'
+
+concurrency:
+  group: e2e-managed-agents-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  secret-gate:
+    name: Check E2E access and secrets
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      enabled: ${{ steps.gate.outputs.enabled }}
+    steps:
+      - name: Decide whether the E2E job can run
+        id: gate
+        env:
+          PR_HEAD_REPOSITORY: ${{ github.event.pull_request.head.repo.full_name }}
+          SNBOT_GITHUB_TOKEN: ${{ secrets.SNBOT_GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          # Pull requests from forks and from Dependabot get no secrets: skip, don't fail.
+          if [[ "${GITHUB_EVENT_NAME}" == "pull_request" ]] && \
+             [[ "${PR_HEAD_REPOSITORY:-}" != "${GITHUB_REPOSITORY}" || "${GITHUB_ACTOR}" == "dependabot[bot]" ]]; then
+            echo "enabled=false" >> "${GITHUB_OUTPUT}"
+            echo "Skipping the secret-backed E2E for a pull request without access to secrets."
+            exit 0
+          fi
+          if [[ -z "${SNBOT_GITHUB_TOKEN:-}" ]]; then
+            echo "::error::Missing required E2E secret: SNBOT_GITHUB_TOKEN"
+            exit 1
+          fi
+          echo "enabled=true" >> "${GITHUB_OUTPUT}"
+
+  e2e:
+    name: SDK against the engine installed with Helm
+    needs: secret-gate
+    if: needs.secret-gate.outputs.enabled == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      KIND_CLUSTER_NAME: orca-sdk-managed-agents
+      KIND_HELM_NAMESPACE: orca-sdk-e2e
+    steps:
+      - name: Check out SDK
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+
+      - name: Resolve dependency settings
+        id: dependencies
+        shell: bash
+        run: |
+          set -euo pipefail
+          source tests/e2e/dependencies.env
+          {
+            echo "engine_repository=${ORCA_MANAGED_AGENTS_REPOSITORY}"
+            echo "engine_registry_image=${ORCA_MANAGED_AGENTS_REGISTRY_IMAGE}"
+            echo "engine_harness_image=${ORCA_MANAGED_AGENTS_HARNESS_IMAGE}"
+            echo "engine_image_tag=${ORCA_MANAGED_AGENTS_IMAGE_TAG}"
+          } >> "${GITHUB_OUTPUT}"
+
+      - uses: astral-sh/setup-uv@d4b2f3b6ecc6e67c4457f6d3e41ec42d3d0fcb86 # v5
+        with:
+          version: ${{ env.UV_VERSION }}
+          enable-cache: true
+
+      - run: uv sync --all-groups
+
+      - name: Build and install the SDK wheel
+        run: |
+          set -euo pipefail
+          uv build
+          uv venv .e2e-venv
+          VIRTUAL_ENV=.e2e-venv uv pip install dist/*.whl
+
+      - uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3
+
+      - uses: azure/setup-kubectl@776406bce94f63e41d621b960d78ee25c8b76ede # v4
+        with:
+          version: v1.31.2
+
+      - uses: azure/setup-helm@1a275c3b69536ee54be43f2070a358922e12c8d4 # v4
+        with:
+          version: v3.16.3
+
+      - name: Install yq and Kind
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl -fsSL -o "${RUNNER_TEMP}/yq" \
+            https://github.com/mikefarah/yq/releases/download/v4.33.3/yq_linux_amd64
+          echo "4ee662847c588c3ef2fec8bfb304e8739e3dbaba87ccb9a608d691c88f5b64dc  ${RUNNER_TEMP}/yq" | sha256sum --check
+          sudo install -m 0755 "${RUNNER_TEMP}/yq" /usr/local/bin/yq
+          curl -fsSL -o "${RUNNER_TEMP}/kind" https://kind.sigs.k8s.io/dl/v0.24.0/kind-linux-amd64
+          echo "b89aada5a39d620da3fcd16435b7f28d858927dd53f92cbac77686b0588b600d  ${RUNNER_TEMP}/kind" | sha256sum --check
+          sudo install -m 0755 "${RUNNER_TEMP}/kind" /usr/local/bin/kind
+
+      - name: Resolve the pinned engine registry image
+        id: registry-image
+        env:
+          SOURCE_IMAGE: ${{ steps.dependencies.outputs.engine_registry_image }}
+          SOURCE_TAG: ${{ steps.dependencies.outputs.engine_image_tag }}
+          IMAGE_COMPONENT: engine registry
+        run: tests/e2e/resolve-latest-image.sh
+
+      - name: Resolve the pinned engine harness image
+        id: harness-image
+        env:
+          SOURCE_IMAGE: ${{ steps.dependencies.outputs.engine_harness_image }}
+          SOURCE_TAG: ${{ steps.dependencies.outputs.engine_image_tag }}
+          IMAGE_COMPONENT: engine harness
+        run: tests/e2e/resolve-latest-image.sh
+
+      - name: Resolve the matching engine source revision
+        id: engine-source
+        env:
+          REGISTRY_REVISION: ${{ steps.registry-image.outputs.revision }}
+          HARNESS_REVISION: ${{ steps.harness-image.outputs.revision }}
+        run: |
+          set -euo pipefail
+          [[ "${REGISTRY_REVISION}" =~ ^[0-9a-f]{40}$ ]]
+          if [[ "${REGISTRY_REVISION}" != "${HARNESS_REVISION}" ]]; then
+            echo "::error::The registry and harness images come from different source revisions"
+            exit 1
+          fi
+          echo "ref=${REGISTRY_REVISION}" >> "${GITHUB_OUTPUT}"
+
+      - name: Check out the matching engine source
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          repository: ${{ steps.dependencies.outputs.engine_repository }}
+          ref: ${{ steps.engine-source.outputs.ref }}
+          path: .e2e/engine
+          token: ${{ secrets.SNBOT_GITHUB_TOKEN }}
+          persist-credentials: false
+
+      - name: Verify the engine source revision
+        env:
+          EXPECTED_REVISION: ${{ steps.engine-source.outputs.ref }}
+        run: test "$(git -C .e2e/engine rev-parse HEAD)" = "${EXPECTED_REVISION}"
+
+      - name: Resolve the chart-pinned AI Gateway image
+        id: gateway-image
+        run: |
+          set -euo pipefail
+          values=.e2e/engine/charts/orca-managed-agents/values.yaml
+          repository=$(yq eval '.images.aiGateway.repository' "${values}")
+          tag=$(yq eval '.images.aiGateway.tag' "${values}")
+          test -n "${repository}"
+          test -n "${tag}"
+          echo "::add-mask::${repository}"
+          echo "source_image=${repository}:${tag}" >> "${GITHUB_OUTPUT}"
+
+      - name: Build the deterministic model and MCP fixture
+        run: |
+          docker buildx build \
+            --platform linux/amd64 \
+            --load \
+            --tag orca-managed-agents-fixture:e2e \
+            --file .e2e/engine/charts/orca-managed-agents/test/kind/Dockerfile.fixture \
+            .e2e/engine >"${RUNNER_TEMP}/fixture-build.log" 2>&1
+
+      - name: Create Kind cluster and load deterministic fixture
+        shell: bash
+        run: |
+          set -euo pipefail
+          kind create cluster --name "${KIND_CLUSTER_NAME}" --wait 120s
+          kind load docker-image \
+            --name "${KIND_CLUSTER_NAME}" \
+            orca-managed-agents-fixture:e2e
+
+      - name: Configure GHCR pull access
+        env:
+          GH_TOKEN: ${{ secrets.SNBOT_GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          kubectl create namespace "${KIND_HELM_NAMESPACE}" \
+            --dry-run=client -o yaml | kubectl apply -f -
+          username=$(gh api user --jq .login)
+          echo "::add-mask::${username}"
+          kubectl --namespace "${KIND_HELM_NAMESPACE}" create secret docker-registry orca-e2e-ghcr \
+            --docker-server=ghcr.io \
+            --docker-username="${username}" \
+            --docker-password="${GH_TOKEN}" \
+            --dry-run=client -o yaml | kubectl apply -f -
+
+      - name: Deploy the engine with Helm
+        env:
+          MANAGED_AGENTS_CHART_DIR: ${{ github.workspace }}/.e2e/engine/charts/orca-managed-agents
+          MANAGED_AGENTS_NAMESPACE: ${{ env.KIND_HELM_NAMESPACE }}
+          MANAGED_AGENTS_INSTALL_INFRA: 'true'
+          MANAGED_AGENTS_REGISTRY_IMAGE: ${{ steps.registry-image.outputs.source_image }}
+          MANAGED_AGENTS_HARNESS_IMAGE: ${{ steps.harness-image.outputs.source_image }}
+          MANAGED_AGENTS_AI_GATEWAY_IMAGE: ${{ steps.gateway-image.outputs.source_image }}
+          MANAGED_AGENTS_FIXTURE_IMAGE: orca-managed-agents-fixture:e2e
+          MANAGED_AGENTS_IMAGE_PULL_SECRET: orca-e2e-ghcr
+        run: tests/e2e/deploy-managed-agents-helm.sh >"${RUNNER_TEMP}/deploy-engine.log" 2>&1
+
+      - name: Run SDK against the engine
+        env:
+          E2E_PYTHON: ${{ github.workspace }}/.e2e-venv/bin/python
+        run: tests/e2e/run-managed-agents-direct.sh
+
+      - name: Show pod status
+        if: failure() || cancelled()
+        run: kubectl --namespace "${KIND_HELM_NAMESPACE}" get pods || true
+
+      - name: Delete Kind cluster
+        if: always()
+        run: kind delete cluster --name "${KIND_CLUSTER_NAME}"

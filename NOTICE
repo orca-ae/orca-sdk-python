@@ -1,0 +1,38 @@
+Orca Python SDK
+Copyright The Orca Authors
+
+This product includes code copied from, or adapted from, the third-party
+projects listed below. THIRD_PARTY_NOTICES reproduces each project's copyright
+notice and license terms.
+
+- anthropic-sdk-python <https://github.com/anthropics/anthropic-sdk-python>
+  Copyright 2023 Anthropic, PBC. Licensed under the MIT License.
+  The HTTP client runtime is adapted from this project: the underscore-prefixed
+  modules of src/orca/ (for example _base_client.py, _models.py, _response.py
+  and _streaming.py), src/orca/_utils/, src/orca/pagination.py, and the tests
+  under tests/ that cover them.
+
+- HTTPX <https://github.com/encode/httpx>
+  Copyright (c) 2019, Encode OSS Ltd. Licensed under the BSD 3-Clause License.
+  Portions of src/orca/_utils/_httpx.py, src/orca/_base_client.py and
+  src/orca/_qs.py.
+
+- httpx-sse <https://github.com/florimondmanca/httpx-sse>
+  Copyright (c) 2022 Florimond Manca. Licensed under the MIT License.
+  The server-sent events decoder in src/orca/_streaming.py.
+
+- Pydantic <https://github.com/pydantic/pydantic>
+  Copyright (c) 2017 to present Pydantic Services Inc. and individual
+  contributors. Licensed under the MIT License.
+  src/orca/_utils/_datetime_parse.py, and portions of src/orca/_models.py and
+  src/orca/_types.py.
+
+- typeshed <https://github.com/python/typeshed>
+  Licensed under the Apache License, Version 2.0.
+  The typed_cached_property type in src/orca/_compat.py.
+
+- RoboDanny <https://github.com/Rapptz/RoboDanny>
+  Licensed under the Mozilla Public License, v. 2.0.
+  The human_join function in src/orca/_utils/_utils.py. The containing source
+  file is distributed under MPL-2.0, with its Apache-2.0 and MIT notices also
+  preserved. Its source is included in both the wheel and source distribution.
