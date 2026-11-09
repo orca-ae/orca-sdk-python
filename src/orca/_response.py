@@ -129,6 +129,10 @@ class BaseAPIResponse(Generic[R]):
         )
 
     def _parse(self, *, to: type[_T] | None = None) -> R | _T:
+        # Only operations explicitly accepting 304 can return an empty successful response.
+        if self.status_code == 304 and 304 in self._options.allowed_status_codes:
+            return cast(R, None)
+
         cast_to = to if to is not None else self._cast_to
 
         # unwrap `TypeAlias('Name', T)` -> `T`

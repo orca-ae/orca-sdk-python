@@ -199,6 +199,7 @@ guardrail = client.guardrails.create(
     name="Protect production",
     phases=["tool_call"],
     scope="explicit",
+    mode="observe",  # Use "enforce" to enforce the rule.
     rule={"kind": "builtin", "builtin": "block_tools", "params": {"tools": ["shell"]}},
 )
 
@@ -216,6 +217,39 @@ for price in client.model_prices.list():
 `guardrail_ids` is optional on agent create/update and session-local agent
 overrides. It is not supported by deployment APIs. The SDK probes the policy
 extension only when the field is explicitly supplied.
+
+Guardrails also accept Dogwood rules with `kind="dogwood"`, `policy`, and optional
+`applies_to`, `history`, and `mcp_manifests`. Responses expose `mode` and optional
+`warnings`; unknown rule kinds retain their fields. `client.guardrails.dogwood_schema()`
+returns the authoring schema.
+
+`client.guardrails.effective(rule_kinds="builtin,dogwood",
+guardrail_capabilities="guardrails.observe.v1", if_none_match=etag)` returns a policy
+bundle for HTTP 200 or `None` for HTTP 304. Use `with_raw_response` to read `ETag`,
+`Cache-Control`, and `Orca-Guardrail-Issued-At`, `Orca-Guardrail-Expires-At`, and
+`Orca-Guardrail-Generation` on either response. The SDK does not cache bundles or
+renew leases itself.
+
+`client.discovery.pricing_v2_group_resources()` and `client.model_price_rules.list()`
+require discovery to advertise `pricing.runorca.ai/v2`; advertising only v1 is
+insufficient. Pricing rule pages retain `catalog_id`, `generation`, `digest`,
+`published_at`, `expires_at`, `required_features`, and `conditional_models` on each
+page. Unknown feature strings are preserved. An expired cursor raises the normal
+HTTP 410 `APIStatusError`; iteration does not restart. The SDK does not calculate bills.
+
+The full raw `openapi/managed-agents-engine.yaml` governs engine extensions and these
+engine-only additions: `discovery.runtime_group_resources()`, `discovery.harnesses()`,
+`environments.rotate_key()`, `environments.revoke_key()`, `environments.work_stats()`,
+and `sessions.threads.interrupt()`. Runtime discovery calls check the advertised runtime
+v1 group. The environment and thread actions send their exact engine requests without
+an invented core capability check; unsupported backends return their own API error.
+The `user.interrupt` session event remains supported.
+
+The portable core contract and deployment overlay continue to govern common core
+APIs; the raw engine artifact does not widen their portability. All 114 engine
+operations are classified in `tests/test_extension_contract.py`, including portable
+exclusions. Both Git proxy operations are excluded because they require special JWT
+authentication and the binary Git protocol.
 
 ## Hosted extensions
 

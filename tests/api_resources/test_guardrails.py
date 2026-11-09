@@ -24,6 +24,7 @@ GUARDRAIL: dict[str, Any] = {
     "name": "Protect production",
     "description": "Blocks risky tool calls",
     "enabled": True,
+    "mode": "enforce",
     "phases": ["tool_call"],
     "scope": "workspace",
     "rule": {"kind": "builtin", "builtin": "block_tools", "params": {"tools": ["shell"]}},

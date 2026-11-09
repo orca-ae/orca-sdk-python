@@ -115,6 +115,14 @@ if TYPE_CHECKING:
         MemoryStoresWithStreamingResponse,
         AsyncMemoryStoresWithStreamingResponse,
     )
+    from .resources.model_price_rules import (
+        ModelPriceRules,
+        AsyncModelPriceRules,
+        ModelPriceRulesWithRawResponse,
+        AsyncModelPriceRulesWithRawResponse,
+        ModelPriceRulesWithStreamingResponse,
+        AsyncModelPriceRulesWithStreamingResponse,
+    )
 from ._types import Omit, Timeout, NotGiven, RequestOptions, not_given
 from ._utils import is_given
 from ._compat import cached_property
@@ -311,6 +319,12 @@ class Orca(SyncAPIClient):
         return ModelPrices(self)
 
     @cached_property
+    def model_price_rules(self) -> ModelPriceRules:
+        from .resources.model_price_rules import ModelPriceRules
+
+        return ModelPriceRules(self)
+
+    @cached_property
     def cloud(self) -> Cloud:
         from .resources.cloud import Cloud
 
@@ -406,7 +420,7 @@ class Orca(SyncAPIClient):
 
         return SessionHandle(self, session_id)
 
-    def _ensure_extension_available(self, group: str) -> None:
+    def _ensure_extension_available(self, group: str, version: str | None = None) -> None:
         """Raise unless this deployment advertises `group` via `GET /apis`.
 
         Namespaces served by an extension are gated here rather than being allowed
@@ -425,10 +439,11 @@ class Orca(SyncAPIClient):
                     groups = self._fetch_extension_groups()
                     self._extension_groups[base] = groups
 
-        if group not in groups:
+        required = f"{group}/{version}" if version else group
+        if required not in groups:
             raise ExtensionNotAvailableError(
                 group,
-                f'This deployment does not advertise the "{group}" extension group '
+                f'This deployment does not advertise the "{required}" extension group '
                 f"(GET /apis groups: [{', '.join(sorted(groups))}]). Methods under this "
                 "namespace require a deployment that serves this extension group.",
             )
@@ -559,6 +574,12 @@ class AsyncOrca(AsyncAPIClient):
         return AsyncModelPrices(self)
 
     @cached_property
+    def model_price_rules(self) -> AsyncModelPriceRules:
+        from .resources.model_price_rules import AsyncModelPriceRules
+
+        return AsyncModelPriceRules(self)
+
+    @cached_property
     def cloud(self) -> AsyncCloud:
         from .resources.cloud import AsyncCloud
 
@@ -668,7 +689,7 @@ class AsyncOrca(AsyncAPIClient):
 
         return AsyncSessionHandle(self, session_id)
 
-    async def _ensure_extension_available(self, group: str) -> None:
+    async def _ensure_extension_available(self, group: str, version: str | None = None) -> None:
         """Async counterpart to `Orca._ensure_extension_available`.
 
         The lock is created lazily because a client may be constructed outside a
@@ -686,10 +707,11 @@ class AsyncOrca(AsyncAPIClient):
                     groups = await self._fetch_extension_groups()
                     self._extension_groups[base] = groups
 
-        if group not in groups:
+        required = f"{group}/{version}" if version else group
+        if required not in groups:
             raise ExtensionNotAvailableError(
                 group,
-                f'This deployment does not advertise the "{group}" extension group '
+                f'This deployment does not advertise the "{required}" extension group '
                 f"(GET /apis groups: [{', '.join(sorted(groups))}]). Methods under this "
                 "namespace require a deployment that serves this extension group.",
             )
@@ -714,7 +736,7 @@ class AsyncOrca(AsyncAPIClient):
 
 
 def _parse_extension_groups(payload: object) -> frozenset[str]:
-    """Extract the advertised group names from a `GET /apis` body.
+    """Extract advertised group names and consistent group/version pairs from `GET /apis`.
 
     An empty or unrecognised body yields an empty set: "no extensions installed" is a
     valid deployment state, not an error.
@@ -732,6 +754,15 @@ def _parse_extension_groups(payload: object) -> frozenset[str]:
         name = cast("Mapping[str, object]", entry).get("name")
         if isinstance(name, str) and name:
             names.add(name)
+            versions = cast("Mapping[str, object]", entry).get("versions")
+            if isinstance(versions, list):
+                for item in cast("list[object]", versions):
+                    if not isinstance(item, dict):
+                        continue
+                    version = cast("Mapping[str, object]", item).get("version")
+                    group_version = cast("Mapping[str, object]", item).get("group_version")
+                    if isinstance(version, str) and group_version == f"{name}/{version}":
+                        names.add(f"{name}/{version}")
     return frozenset(names)
 
 
@@ -850,6 +881,12 @@ class OrcaWithRawResponse:
         return ModelPricesWithRawResponse(self._client.model_prices)
 
     @cached_property
+    def model_price_rules(self) -> ModelPriceRulesWithRawResponse:
+        from .resources.model_price_rules import ModelPriceRulesWithRawResponse
+
+        return ModelPriceRulesWithRawResponse(self._client.model_price_rules)
+
+    @cached_property
     def cloud(self) -> CloudWithRawResponse:
         from .resources.cloud import CloudWithRawResponse
 
@@ -927,6 +964,12 @@ class AsyncOrcaWithRawResponse:
         from .resources.model_prices import AsyncModelPricesWithRawResponse
 
         return AsyncModelPricesWithRawResponse(self._client.model_prices)
+
+    @cached_property
+    def model_price_rules(self) -> AsyncModelPriceRulesWithRawResponse:
+        from .resources.model_price_rules import AsyncModelPriceRulesWithRawResponse
+
+        return AsyncModelPriceRulesWithRawResponse(self._client.model_price_rules)
 
     @cached_property
     def cloud(self) -> AsyncCloudWithRawResponse:
@@ -1008,6 +1051,12 @@ class OrcaWithStreamedResponse:
         return ModelPricesWithStreamingResponse(self._client.model_prices)
 
     @cached_property
+    def model_price_rules(self) -> ModelPriceRulesWithStreamingResponse:
+        from .resources.model_price_rules import ModelPriceRulesWithStreamingResponse
+
+        return ModelPriceRulesWithStreamingResponse(self._client.model_price_rules)
+
+    @cached_property
     def cloud(self) -> CloudWithStreamingResponse:
         from .resources.cloud import CloudWithStreamingResponse
 
@@ -1085,6 +1134,12 @@ class AsyncOrcaWithStreamedResponse:
         from .resources.model_prices import AsyncModelPricesWithStreamingResponse
 
         return AsyncModelPricesWithStreamingResponse(self._client.model_prices)
+
+    @cached_property
+    def model_price_rules(self) -> AsyncModelPriceRulesWithStreamingResponse:
+        from .resources.model_price_rules import AsyncModelPriceRulesWithStreamingResponse
+
+        return AsyncModelPriceRulesWithStreamingResponse(self._client.model_price_rules)
 
     @cached_property
     def cloud(self) -> AsyncCloudWithStreamingResponse:

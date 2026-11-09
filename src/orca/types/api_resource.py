@@ -3,7 +3,7 @@
 
 from __future__ import annotations
 
-from typing import List
+from typing import List, Optional
 from typing_extensions import Literal
 
 from .._models import BaseModel
@@ -25,3 +25,5 @@ class APIResourceList(BaseModel):
     group_version: str
 
     resources: List[APIResource]
+
+    required_features: Optional[List[str]] = None

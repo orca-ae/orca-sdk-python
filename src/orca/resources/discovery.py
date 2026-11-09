@@ -16,6 +16,7 @@ from .._response import (
 )
 from .._constants import POLICY_EXTENSION_GROUP, PRICING_EXTENSION_GROUP
 from .._base_client import make_request_options
+from ..types.harness import HarnessList
 from ._extension_gate import extension_gate, async_extension_gate
 from ..types.api_group import APIGroupList
 from ..types.api_resource import APIResourceList
@@ -107,6 +108,81 @@ class Discovery(SyncAPIResource):
             cast_to=APIResourceList,
         )
 
+    def pricing_v2_group_resources(
+        self,
+        *,
+        extra_headers: Headers | None = None,
+        extra_query: Query | None = None,
+        extra_body: Body | None = None,
+        timeout: float | httpx2.Timeout | None | NotGiven = not_given,
+    ) -> APIResourceList:
+        """Read engine-only pricing v2 group resources.
+
+        Args:
+          extra_headers: Send extra headers
+          extra_query: Add additional query parameters to the request
+          extra_body: Add additional JSON properties to the request
+          timeout: Override the client-level default timeout for this request, in seconds
+        """
+        extension_gate(self, PRICING_EXTENSION_GROUP, "v2")
+        return self._get(
+            "/apis/pricing.runorca.ai/v2",
+            options=make_request_options(
+                extra_headers=extra_headers, extra_query=extra_query, extra_body=extra_body, timeout=timeout
+            ),
+            cast_to=APIResourceList,
+        )
+
+    def runtime_group_resources(
+        self,
+        *,
+        extra_headers: Headers | None = None,
+        extra_query: Query | None = None,
+        extra_body: Body | None = None,
+        timeout: float | httpx2.Timeout | None | NotGiven = not_given,
+    ) -> APIResourceList:
+        """Read engine-only runtime group resources.
+
+        Args:
+          extra_headers: Send extra headers
+          extra_query: Add additional query parameters to the request
+          extra_body: Add additional JSON properties to the request
+          timeout: Override the client-level default timeout for this request, in seconds
+        """
+        extension_gate(self, "runtime.runorca.ai", "v1")
+        return self._get(
+            "/apis/runtime.runorca.ai/v1",
+            options=make_request_options(
+                extra_headers=extra_headers, extra_query=extra_query, extra_body=extra_body, timeout=timeout
+            ),
+            cast_to=APIResourceList,
+        )
+
+    def harnesses(
+        self,
+        *,
+        extra_headers: Headers | None = None,
+        extra_query: Query | None = None,
+        extra_body: Body | None = None,
+        timeout: float | httpx2.Timeout | None | NotGiven = not_given,
+    ) -> HarnessList:
+        """Read engine-only harnesses.
+
+        Args:
+          extra_headers: Send extra headers
+          extra_query: Add additional query parameters to the request
+          extra_body: Add additional JSON properties to the request
+          timeout: Override the client-level default timeout for this request, in seconds
+        """
+        extension_gate(self, "runtime.runorca.ai", "v1")
+        return self._get(
+            "/apis/runtime.runorca.ai/v1/harnesses",
+            options=make_request_options(
+                extra_headers=extra_headers, extra_query=extra_query, extra_body=extra_body, timeout=timeout
+            ),
+            cast_to=HarnessList,
+        )
+
 
 class AsyncDiscovery(AsyncAPIResource):
     @cached_property
@@ -192,6 +268,81 @@ class AsyncDiscovery(AsyncAPIResource):
             cast_to=APIResourceList,
         )
 
+    async def pricing_v2_group_resources(
+        self,
+        *,
+        extra_headers: Headers | None = None,
+        extra_query: Query | None = None,
+        extra_body: Body | None = None,
+        timeout: float | httpx2.Timeout | None | NotGiven = not_given,
+    ) -> APIResourceList:
+        """Read engine-only pricing v2 group resources.
+
+        Args:
+          extra_headers: Send extra headers
+          extra_query: Add additional query parameters to the request
+          extra_body: Add additional JSON properties to the request
+          timeout: Override the client-level default timeout for this request, in seconds
+        """
+        await async_extension_gate(self, PRICING_EXTENSION_GROUP, "v2")
+        return await self._get(
+            "/apis/pricing.runorca.ai/v2",
+            options=make_request_options(
+                extra_headers=extra_headers, extra_query=extra_query, extra_body=extra_body, timeout=timeout
+            ),
+            cast_to=APIResourceList,
+        )
+
+    async def runtime_group_resources(
+        self,
+        *,
+        extra_headers: Headers | None = None,
+        extra_query: Query | None = None,
+        extra_body: Body | None = None,
+        timeout: float | httpx2.Timeout | None | NotGiven = not_given,
+    ) -> APIResourceList:
+        """Read engine-only runtime group resources.
+
+        Args:
+          extra_headers: Send extra headers
+          extra_query: Add additional query parameters to the request
+          extra_body: Add additional JSON properties to the request
+          timeout: Override the client-level default timeout for this request, in seconds
+        """
+        await async_extension_gate(self, "runtime.runorca.ai", "v1")
+        return await self._get(
+            "/apis/runtime.runorca.ai/v1",
+            options=make_request_options(
+                extra_headers=extra_headers, extra_query=extra_query, extra_body=extra_body, timeout=timeout
+            ),
+            cast_to=APIResourceList,
+        )
+
+    async def harnesses(
+        self,
+        *,
+        extra_headers: Headers | None = None,
+        extra_query: Query | None = None,
+        extra_body: Body | None = None,
+        timeout: float | httpx2.Timeout | None | NotGiven = not_given,
+    ) -> HarnessList:
+        """Read engine-only harnesses.
+
+        Args:
+          extra_headers: Send extra headers
+          extra_query: Add additional query parameters to the request
+          extra_body: Add additional JSON properties to the request
+          timeout: Override the client-level default timeout for this request, in seconds
+        """
+        await async_extension_gate(self, "runtime.runorca.ai", "v1")
+        return await self._get(
+            "/apis/runtime.runorca.ai/v1/harnesses",
+            options=make_request_options(
+                extra_headers=extra_headers, extra_query=extra_query, extra_body=extra_body, timeout=timeout
+            ),
+            cast_to=HarnessList,
+        )
+
 
 class DiscoveryWithRawResponse:
     def __init__(self, discovery: Discovery) -> None:
@@ -200,6 +351,9 @@ class DiscoveryWithRawResponse:
         self.groups = to_raw_response_wrapper(discovery.groups)
         self.policy_group_resources = to_raw_response_wrapper(discovery.policy_group_resources)
         self.pricing_group_resources = to_raw_response_wrapper(discovery.pricing_group_resources)
+        self.pricing_v2_group_resources = to_raw_response_wrapper(discovery.pricing_v2_group_resources)
+        self.runtime_group_resources = to_raw_response_wrapper(discovery.runtime_group_resources)
+        self.harnesses = to_raw_response_wrapper(discovery.harnesses)
 
 
 class AsyncDiscoveryWithRawResponse:
@@ -209,6 +363,9 @@ class AsyncDiscoveryWithRawResponse:
         self.groups = async_to_raw_response_wrapper(discovery.groups)
         self.policy_group_resources = async_to_raw_response_wrapper(discovery.policy_group_resources)
         self.pricing_group_resources = async_to_raw_response_wrapper(discovery.pricing_group_resources)
+        self.pricing_v2_group_resources = async_to_raw_response_wrapper(discovery.pricing_v2_group_resources)
+        self.runtime_group_resources = async_to_raw_response_wrapper(discovery.runtime_group_resources)
+        self.harnesses = async_to_raw_response_wrapper(discovery.harnesses)
 
 
 class DiscoveryWithStreamingResponse:
@@ -218,6 +375,9 @@ class DiscoveryWithStreamingResponse:
         self.groups = to_streamed_response_wrapper(discovery.groups)
         self.policy_group_resources = to_streamed_response_wrapper(discovery.policy_group_resources)
         self.pricing_group_resources = to_streamed_response_wrapper(discovery.pricing_group_resources)
+        self.pricing_v2_group_resources = to_streamed_response_wrapper(discovery.pricing_v2_group_resources)
+        self.runtime_group_resources = to_streamed_response_wrapper(discovery.runtime_group_resources)
+        self.harnesses = to_streamed_response_wrapper(discovery.harnesses)
 
 
 class AsyncDiscoveryWithStreamingResponse:
@@ -227,3 +387,6 @@ class AsyncDiscoveryWithStreamingResponse:
         self.groups = async_to_streamed_response_wrapper(discovery.groups)
         self.policy_group_resources = async_to_streamed_response_wrapper(discovery.policy_group_resources)
         self.pricing_group_resources = async_to_streamed_response_wrapper(discovery.pricing_group_resources)
+        self.pricing_v2_group_resources = async_to_streamed_response_wrapper(discovery.pricing_v2_group_resources)
+        self.runtime_group_resources = async_to_streamed_response_wrapper(discovery.runtime_group_resources)
+        self.harnesses = async_to_streamed_response_wrapper(discovery.harnesses)
