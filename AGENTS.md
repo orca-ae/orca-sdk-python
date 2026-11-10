@@ -5,13 +5,13 @@ conventions every contribution is expected to follow.
 
 ## 1. Source of truth
 
-Two vendored OpenAPI specs plus the core deployment overlay define the portable SDK surface:
+The portable core contract, its deployment overlay, and extension artifacts define the portable SDK surface:
 
 | Artifact | Base-path rule | Governs |
 |---|---|---|
 | `openapi/managed-agents.yaml` | No `servers` entry; paths carry `/v1`, `/api`, or `/apis` explicitly. | Core resources: `agents` (+`versions`), `sessions` (+`events`, `files`, `resources`, `threads(.events)`), `environments`, `files`, `skills` (+`versions`), `vaults` (+`credentials`), `memory_stores` (+`memories`, `memory_versions`), `triggers` (+`sessions`), `discovery`. |
 | `openapi/managed-agents-deployment.overlay.yaml` | Applies to `managed-agents.yaml`. | Deployment deviations. Its removal actions define what is not portable across both supported backends. |
-| `openapi/managed-agents-extensions.yaml` | `/apis/policy.runorca.ai/v1`, `/apis/pricing.runorca.ai/v1` | The engine's own extension groups: `guardrails` and `model_prices`. |
+| `openapi/managed-agents-engine.yaml` | Full raw engine paths | Engine policy, pricing, runtime and explicitly supported engine-only core additions. Core portability remains governed by the core spec and overlay above. |
 | `openapi/cloud-extensions.yaml` | `/apis/cloud.sn.io/v1` | The complete `cloud.*` namespace, served only by the hosted extension group. |
 
 These files are vendored byte-for-byte from the server that generates them. Never hand-edit

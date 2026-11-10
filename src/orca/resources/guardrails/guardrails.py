@@ -24,7 +24,9 @@ from ..._base_client import AsyncPaginator, make_request_options
 from .._extension_gate import extension_gate, async_extension_gate
 from ...types.guardrail import Guardrail, DeletedGuardrail
 from ...types.guardrail_type import GuardrailTypeList
-from ...types.guardrail_shared import GuardrailPhase, GuardrailScope, GuardrailRuleParam
+from ...types.guardrail_bundle import GuardrailBundle
+from ...types.guardrail_shared import GuardrailMode, GuardrailPhase, GuardrailScope, GuardrailRuleParam
+from ...types.guardrail_dogwood_schema import GuardrailDogwoodSchema
 
 __all__ = ["Guardrails", "AsyncGuardrails"]
 
@@ -44,6 +46,7 @@ class Guardrails(SyncAPIResource):
         name: str,
         rule: GuardrailRuleParam,
         description: Optional[str] | Omit = omit,
+        mode: GuardrailMode | Omit = omit,
         enabled: bool | Omit = omit,
         phases: List[GuardrailPhase] | Omit = omit,
         scope: GuardrailScope | Omit = omit,
@@ -62,6 +65,7 @@ class Guardrails(SyncAPIResource):
                     "name": name,
                     "rule": rule,
                     "description": description,
+                    "mode": mode,
                     "enabled": enabled,
                     "phases": phases,
                     "scope": scope,
@@ -102,6 +106,7 @@ class Guardrails(SyncAPIResource):
         *,
         name: str | Omit = omit,
         description: Optional[str] | Omit = omit,
+        mode: GuardrailMode | Omit = omit,
         enabled: bool | Omit = omit,
         phases: List[GuardrailPhase] | Omit = omit,
         scope: GuardrailScope | Omit = omit,
@@ -122,6 +127,7 @@ class Guardrails(SyncAPIResource):
                 {
                     "name": name,
                     "description": description,
+                    "mode": mode,
                     "enabled": enabled,
                     "phases": phases,
                     "scope": scope,
@@ -225,6 +231,70 @@ class Guardrails(SyncAPIResource):
             cast_to=GuardrailTypeList,
         )
 
+    def dogwood_schema(
+        self,
+        *,
+        extra_headers: Headers | None = None,
+        extra_query: Query | None = None,
+        extra_body: Body | None = None,
+        timeout: float | httpx2.Timeout | None | NotGiven = not_given,
+    ) -> GuardrailDogwoodSchema:
+        """Retrieve the engine Dogwood authoring schema.
+
+        Args:
+          extra_headers: Send extra headers
+          extra_query: Add additional query parameters to the request
+          extra_body: Add additional JSON properties to the request
+          timeout: Override the client-level default timeout for this request, in seconds
+        """
+        extension_gate(self, POLICY_EXTENSION_GROUP)
+        return self._get(
+            "/apis/policy.runorca.ai/v1/policyschemas/dogwood",
+            options=make_request_options(
+                extra_headers=extra_headers, extra_query=extra_query, extra_body=extra_body, timeout=timeout
+            ),
+            cast_to=GuardrailDogwoodSchema,
+        )
+
+    def effective(
+        self,
+        *,
+        rule_kinds: str | Omit = omit,
+        guardrail_capabilities: str | Omit = omit,
+        if_none_match: str | Omit = omit,
+        extra_headers: Headers | None = None,
+        extra_query: Query | None = None,
+        extra_body: Body | None = None,
+        timeout: float | httpx2.Timeout | None | NotGiven = not_given,
+    ) -> Optional[GuardrailBundle]:
+        """Retrieve an engine policy bundle, or None for 304; raw responses expose lease headers.
+
+        Args:
+          rule_kinds: Comma-separated rule kinds supported by the caller.
+          guardrail_capabilities: Comma-separated runtime guardrail capabilities.
+          if_none_match: Previously received ETag for a conditional lease exchange.
+          extra_headers: Send extra headers
+          extra_query: Add additional query parameters to the request
+          extra_body: Add additional JSON properties to the request
+          timeout: Override the client-level default timeout for this request, in seconds
+        """
+        extension_gate(self, POLICY_EXTENSION_GROUP)
+        options = make_request_options(
+            extra_headers=extra_headers,
+            extra_query=extra_query,
+            extra_body=extra_body,
+            timeout=timeout,
+            query={"rule_kinds": rule_kinds, "guardrail_capabilities": guardrail_capabilities},
+        )
+        if not isinstance(if_none_match, Omit):
+            options["headers"] = {"If-None-Match": if_none_match, **(extra_headers or {})}
+        options["allowed_status_codes"] = (304,)
+        return self._get(
+            "/apis/policy.runorca.ai/v1/effectiveguardrails",
+            options=options,
+            cast_to=GuardrailBundle,
+        )
+
 
 class AsyncGuardrails(AsyncAPIResource):
     @cached_property
@@ -241,6 +311,7 @@ class AsyncGuardrails(AsyncAPIResource):
         name: str,
         rule: GuardrailRuleParam,
         description: Optional[str] | Omit = omit,
+        mode: GuardrailMode | Omit = omit,
         enabled: bool | Omit = omit,
         phases: List[GuardrailPhase] | Omit = omit,
         scope: GuardrailScope | Omit = omit,
@@ -259,6 +330,7 @@ class AsyncGuardrails(AsyncAPIResource):
                     "name": name,
                     "rule": rule,
                     "description": description,
+                    "mode": mode,
                     "enabled": enabled,
                     "phases": phases,
                     "scope": scope,
@@ -299,6 +371,7 @@ class AsyncGuardrails(AsyncAPIResource):
         *,
         name: str | Omit = omit,
         description: Optional[str] | Omit = omit,
+        mode: GuardrailMode | Omit = omit,
         enabled: bool | Omit = omit,
         phases: List[GuardrailPhase] | Omit = omit,
         scope: GuardrailScope | Omit = omit,
@@ -319,6 +392,7 @@ class AsyncGuardrails(AsyncAPIResource):
                 {
                     "name": name,
                     "description": description,
+                    "mode": mode,
                     "enabled": enabled,
                     "phases": phases,
                     "scope": scope,
@@ -422,6 +496,70 @@ class AsyncGuardrails(AsyncAPIResource):
             cast_to=GuardrailTypeList,
         )
 
+    async def dogwood_schema(
+        self,
+        *,
+        extra_headers: Headers | None = None,
+        extra_query: Query | None = None,
+        extra_body: Body | None = None,
+        timeout: float | httpx2.Timeout | None | NotGiven = not_given,
+    ) -> GuardrailDogwoodSchema:
+        """Retrieve the engine Dogwood authoring schema.
+
+        Args:
+          extra_headers: Send extra headers
+          extra_query: Add additional query parameters to the request
+          extra_body: Add additional JSON properties to the request
+          timeout: Override the client-level default timeout for this request, in seconds
+        """
+        await async_extension_gate(self, POLICY_EXTENSION_GROUP)
+        return await self._get(
+            "/apis/policy.runorca.ai/v1/policyschemas/dogwood",
+            options=make_request_options(
+                extra_headers=extra_headers, extra_query=extra_query, extra_body=extra_body, timeout=timeout
+            ),
+            cast_to=GuardrailDogwoodSchema,
+        )
+
+    async def effective(
+        self,
+        *,
+        rule_kinds: str | Omit = omit,
+        guardrail_capabilities: str | Omit = omit,
+        if_none_match: str | Omit = omit,
+        extra_headers: Headers | None = None,
+        extra_query: Query | None = None,
+        extra_body: Body | None = None,
+        timeout: float | httpx2.Timeout | None | NotGiven = not_given,
+    ) -> Optional[GuardrailBundle]:
+        """Retrieve an engine policy bundle, or None for 304; raw responses expose lease headers.
+
+        Args:
+          rule_kinds: Comma-separated rule kinds supported by the caller.
+          guardrail_capabilities: Comma-separated runtime guardrail capabilities.
+          if_none_match: Previously received ETag for a conditional lease exchange.
+          extra_headers: Send extra headers
+          extra_query: Add additional query parameters to the request
+          extra_body: Add additional JSON properties to the request
+          timeout: Override the client-level default timeout for this request, in seconds
+        """
+        await async_extension_gate(self, POLICY_EXTENSION_GROUP)
+        options = make_request_options(
+            extra_headers=extra_headers,
+            extra_query=extra_query,
+            extra_body=extra_body,
+            timeout=timeout,
+            query={"rule_kinds": rule_kinds, "guardrail_capabilities": guardrail_capabilities},
+        )
+        if not isinstance(if_none_match, Omit):
+            options["headers"] = {"If-None-Match": if_none_match, **(extra_headers or {})}
+        options["allowed_status_codes"] = (304,)
+        return await self._get(
+            "/apis/policy.runorca.ai/v1/effectiveguardrails",
+            options=options,
+            cast_to=GuardrailBundle,
+        )
+
 
 class GuardrailsWithRawResponse:
     def __init__(self, guardrails: Guardrails) -> None:
@@ -433,6 +571,8 @@ class GuardrailsWithRawResponse:
         self.archive = to_raw_response_wrapper(guardrails.archive)
         self.delete = to_raw_response_wrapper(guardrails.delete)
         self.list_types = to_raw_response_wrapper(guardrails.list_types)
+        self.dogwood_schema = to_raw_response_wrapper(guardrails.dogwood_schema)
+        self.effective = to_raw_response_wrapper(guardrails.effective)
 
 
 class AsyncGuardrailsWithRawResponse:
@@ -445,6 +585,8 @@ class AsyncGuardrailsWithRawResponse:
         self.archive = async_to_raw_response_wrapper(guardrails.archive)
         self.delete = async_to_raw_response_wrapper(guardrails.delete)
         self.list_types = async_to_raw_response_wrapper(guardrails.list_types)
+        self.dogwood_schema = async_to_raw_response_wrapper(guardrails.dogwood_schema)
+        self.effective = async_to_raw_response_wrapper(guardrails.effective)
 
 
 class GuardrailsWithStreamingResponse:
@@ -457,6 +599,8 @@ class GuardrailsWithStreamingResponse:
         self.archive = to_streamed_response_wrapper(guardrails.archive)
         self.delete = to_streamed_response_wrapper(guardrails.delete)
         self.list_types = to_streamed_response_wrapper(guardrails.list_types)
+        self.dogwood_schema = to_streamed_response_wrapper(guardrails.dogwood_schema)
+        self.effective = to_streamed_response_wrapper(guardrails.effective)
 
 
 class AsyncGuardrailsWithStreamingResponse:
@@ -469,3 +613,5 @@ class AsyncGuardrailsWithStreamingResponse:
         self.archive = async_to_streamed_response_wrapper(guardrails.archive)
         self.delete = async_to_streamed_response_wrapper(guardrails.delete)
         self.list_types = async_to_streamed_response_wrapper(guardrails.list_types)
+        self.dogwood_schema = async_to_streamed_response_wrapper(guardrails.dogwood_schema)
+        self.effective = async_to_streamed_response_wrapper(guardrails.effective)

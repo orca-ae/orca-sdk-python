@@ -48,6 +48,7 @@ snapshots do not declare this field in the core contract.
 | `client.sessions.resources.retrieve()` | `SessionResource` |
 | `client.sessions.resources.update()` | `SessionResource` |
 | `client.sessions.threads.archive()` | `SessionThread` |
+| `client.sessions.threads.interrupt()` (engine-only) | `SessionThread` |
 | `client.sessions.threads.list()` | `SyncPageCursor[SessionThread]` |
 | `client.sessions.threads.retrieve()` | `SessionThread` |
 | `client.sessions.threads.events.list()` | `SyncPageCursor[SessionEvent]` |
@@ -63,6 +64,9 @@ snapshots do not declare this field in the core contract.
 | `client.environments.list()` | `SyncPageCursor[Environment]` |
 | `client.environments.retrieve()` | `Environment` |
 | `client.environments.update()` | `Environment` |
+| `client.environments.rotate_key()` (engine-only) | `EnvironmentKey` |
+| `client.environments.revoke_key()` (engine-only) | `Environment` |
+| `client.environments.work_stats()` (engine-only) | `EnvironmentWorkStats` |
 
 ## `client.files`
 
@@ -144,6 +148,9 @@ snapshots do not declare this field in the core contract.
 | `client.discovery.groups()` | `APIGroupList` |
 | `client.discovery.policy_group_resources()` | `APIResourceList` |
 | `client.discovery.pricing_group_resources()` | `APIResourceList` |
+| `client.discovery.pricing_v2_group_resources()` | `APIResourceList` |
+| `client.discovery.runtime_group_resources()` (engine-only) | `APIResourceList` |
+| `client.discovery.harnesses()` (engine-only) | `HarnessList` |
 
 ## `client.guardrails`
 
@@ -156,6 +163,14 @@ snapshots do not declare this field in the core contract.
 | `client.guardrails.list_types()` | `GuardrailTypeList` |
 | `client.guardrails.retrieve()` | `Guardrail` |
 | `client.guardrails.update()` | `Guardrail` |
+| `client.guardrails.effective()` | `Optional[GuardrailBundle]` |
+| `client.guardrails.dogwood_schema()` | `GuardrailDogwoodSchema` |
+
+Create/update accept `mode="enforce"` or `"observe"` and typed Dogwood rules. Responses
+include mode and optional warnings; future rule kinds preserve their payloads.
+`effective()` accepts comma-separated `rule_kinds` and `guardrail_capabilities`, plus
+`if_none_match`. HTTP 304 returns `None`; raw/streaming response headers expose the
+renewed lease. Effective state scopes include `workspace_window`.
 
 ## `client.model_prices`
 
@@ -163,6 +178,19 @@ snapshots do not declare this field in the core contract.
 |---|---|
 | `client.model_prices.list()` | `SyncPageCursor[ModelPrice]` |
 | `client.model_prices.retrieve()` | `ModelPrice` |
+
+## `client.model_price_rules`
+
+| Method | Returns |
+|---|---|
+| `client.model_price_rules.list()` | `SyncModelPriceRulePage[ModelPriceRule]` |
+
+Requires advertised `pricing.runorca.ai/v2`. Each page retains catalog identity,
+lease, required features and conditional models. HTTP 410 stops pagination. Async
+clients return an `AsyncPaginator[ModelPriceRule, AsyncModelPriceRulePage[ModelPriceRule]]`.
+All new methods also support resource-level and client-level raw/streaming wrappers.
+The engine artifact governs these extensions and the explicitly marked engine-only
+core actions; portable core and hosted-extension contracts remain unchanged.
 
 ## `client.cloud`
 

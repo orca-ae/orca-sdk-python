@@ -3,7 +3,7 @@
 
 from __future__ import annotations
 
-from typing import Dict, Union
+from typing import Dict, List, Union
 from typing_extensions import Literal, Required, TypeAlias, TypedDict
 
 __all__ = [
@@ -14,6 +14,9 @@ __all__ = [
     "GuardrailRuleParam",
     "GuardrailBuiltinRuleParam",
     "GuardrailExpressionRuleParam",
+    "GuardrailMode",
+    "GuardrailDogwoodRuleParam",
+    "GuardrailMCPManifestParam",
 ]
 
 GuardrailPhase: TypeAlias = Literal[
@@ -26,7 +29,8 @@ GuardrailPhase: TypeAlias = Literal[
 ]
 GuardrailScope: TypeAlias = Literal["organization", "workspace", "explicit"]
 GuardrailVerdict: TypeAlias = Literal["ask", "deny"]
-GuardrailStateScope: TypeAlias = Literal["turn", "session", "subject_window"]
+GuardrailStateScope: TypeAlias = Literal["turn", "session", "subject_window", "workspace_window"]
+GuardrailMode: TypeAlias = Literal["enforce", "observe"]
 
 
 class GuardrailBuiltinRuleParam(TypedDict, total=False):
@@ -47,4 +51,20 @@ class GuardrailExpressionRuleParam(TypedDict, total=False):
     reason: str
 
 
-GuardrailRuleParam: TypeAlias = Union[GuardrailBuiltinRuleParam, GuardrailExpressionRuleParam]
+class GuardrailMCPManifestParam(TypedDict, total=False):
+    server: Required[str]
+    url: Required[str]
+    tools: Required[List[Dict[str, object]]]
+
+
+class GuardrailDogwoodRuleParam(TypedDict, total=False):
+    kind: Required[Literal["dogwood"]]
+    policy: Required[str]
+    applies_to: Literal["all_tools", "mcp_tools"]
+    history: Literal["session", "principal"]
+    mcp_manifests: List[GuardrailMCPManifestParam]
+
+
+GuardrailRuleParam: TypeAlias = Union[
+    GuardrailBuiltinRuleParam, GuardrailExpressionRuleParam, GuardrailDogwoodRuleParam
+]
