@@ -191,6 +191,9 @@ class Threads(SyncAPIResource):
     ) -> SessionThread:
         """Interrupt a thread using the engine-only action; user.interrupt events remain supported.
 
+        This action never retries automatically, even if the client enables retries:
+        indexing can fail after the terminal event is persisted, so retrying can append it twice.
+
         Args:
           session_id: Session that owns the thread.
           thread_id: Thread to interrupt.
@@ -208,9 +211,12 @@ class Threads(SyncAPIResource):
                 "/v1/sessions/{session_id}/threads/{thread_id}/interrupt", session_id=session_id, thread_id=thread_id
             ),
             body={},
-            options=make_request_options(
-                extra_headers=extra_headers, extra_query=extra_query, extra_body=extra_body, timeout=timeout
-            ),
+            options={
+                "max_retries": 0,
+                **make_request_options(
+                    extra_headers=extra_headers, extra_query=extra_query, extra_body=extra_body, timeout=timeout
+                ),
+            },
             cast_to=SessionThread,
         )
 
@@ -375,6 +381,9 @@ class AsyncThreads(AsyncAPIResource):
     ) -> SessionThread:
         """Interrupt a thread using the engine-only action; user.interrupt events remain supported.
 
+        This action never retries automatically, even if the client enables retries:
+        indexing can fail after the terminal event is persisted, so retrying can append it twice.
+
         Args:
           session_id: Session that owns the thread.
           thread_id: Thread to interrupt.
@@ -392,9 +401,12 @@ class AsyncThreads(AsyncAPIResource):
                 "/v1/sessions/{session_id}/threads/{thread_id}/interrupt", session_id=session_id, thread_id=thread_id
             ),
             body={},
-            options=make_request_options(
-                extra_headers=extra_headers, extra_query=extra_query, extra_body=extra_body, timeout=timeout
-            ),
+            options={
+                "max_retries": 0,
+                **make_request_options(
+                    extra_headers=extra_headers, extra_query=extra_query, extra_body=extra_body, timeout=timeout
+                ),
+            },
             cast_to=SessionThread,
         )
 

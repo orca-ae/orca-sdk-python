@@ -9,6 +9,7 @@ import asyncio
 import inspect
 import logging
 import threading
+from time import monotonic
 from typing import TYPE_CHECKING, Any, Union, Mapping, Callable, Awaitable, cast
 from typing_extensions import Self, TypeAlias, override
 
@@ -239,6 +240,7 @@ class Orca(SyncAPIClient):
             api_key = os.environ.get("ORCA_API_KEY") or None
         self.api_key = api_key
         self._extension_groups: dict[str, frozenset[str]] = {}
+        self._extension_groups_fetched_at: dict[str, float] = {}
         self._extension_lock = threading.Lock()
 
         super().__init__(
@@ -427,19 +429,33 @@ class Orca(SyncAPIClient):
         to fail as a 404, so calling one against a deployment that does not serve it
         produces `ExtensionNotAvailableError` and makes no HTTP request at all.
 
-        The discovery result is cached per base URL, and the lock collapses a burst
-        of concurrent first-calls into a single probe.
+        Positive discovery results stay cached per base URL. A missing group or
+        version refreshes a snapshot at least 15 seconds old; the lock collapses
+        concurrent probes. Failed refreshes preserve the last successful snapshot.
         """
         base = str(self.base_url)
+        required = f"{group}/{version}" if version else group
         groups = self._extension_groups.get(base)
-        if groups is None:
+        if groups is None or required not in groups:
             with self._extension_lock:
                 groups = self._extension_groups.get(base)
-                if groups is None:
-                    groups = self._fetch_extension_groups()
-                    self._extension_groups[base] = groups
+                if groups is None or (
+                    required not in groups and monotonic() - self._extension_groups_fetched_at[base] >= 15
+                ):
+                    try:
+                        groups = self._fetch_extension_groups()
+                    except NotFoundError:
+                        if groups is not None:
+                            raise
+                        # A pre-discovery deployment has no extensions; do not cache the failed probe.
+                        log.warning(
+                            "GET /apis is not served by this deployment; treating it as serving no extension groups"
+                        )
+                        groups = frozenset[str]()
+                    else:
+                        self._extension_groups_fetched_at[base] = monotonic()
+                        self._extension_groups[base] = groups
 
-        required = f"{group}/{version}" if version else group
         if required not in groups:
             raise ExtensionNotAvailableError(
                 group,
@@ -449,12 +465,7 @@ class Orca(SyncAPIClient):
             )
 
     def _fetch_extension_groups(self) -> frozenset[str]:
-        try:
-            response = self.get("/apis", cast_to=httpx2.Response)
-        except NotFoundError:
-            # A deployment predating the discovery route serves no extensions.
-            log.warning("GET /apis is not served by this deployment; treating it as serving no extension groups")
-            return frozenset()
+        response = self.get("/apis", cast_to=httpx2.Response)
         return _parse_extension_groups(cast("object", response.json()))
 
     @override
@@ -494,6 +505,7 @@ class AsyncOrca(AsyncAPIClient):
             api_key = os.environ.get("ORCA_API_KEY") or None
         self.api_key = api_key
         self._extension_groups: dict[str, frozenset[str]] = {}
+        self._extension_groups_fetched_at: dict[str, float] = {}
         self._extension_lock = None
 
         super().__init__(
@@ -697,17 +709,30 @@ class AsyncOrca(AsyncAPIClient):
         tie it to the wrong loop.
         """
         base = str(self.base_url)
+        required = f"{group}/{version}" if version else group
         groups = self._extension_groups.get(base)
-        if groups is None:
+        if groups is None or required not in groups:
             if self._extension_lock is None:
                 self._extension_lock = asyncio.Lock()
             async with self._extension_lock:
                 groups = self._extension_groups.get(base)
-                if groups is None:
-                    groups = await self._fetch_extension_groups()
-                    self._extension_groups[base] = groups
+                if groups is None or (
+                    required not in groups and monotonic() - self._extension_groups_fetched_at[base] >= 15
+                ):
+                    try:
+                        groups = await self._fetch_extension_groups()
+                    except NotFoundError:
+                        if groups is not None:
+                            raise
+                        # A pre-discovery deployment has no extensions; do not cache the failed probe.
+                        log.warning(
+                            "GET /apis is not served by this deployment; treating it as serving no extension groups"
+                        )
+                        groups = frozenset[str]()
+                    else:
+                        self._extension_groups_fetched_at[base] = monotonic()
+                        self._extension_groups[base] = groups
 
-        required = f"{group}/{version}" if version else group
         if required not in groups:
             raise ExtensionNotAvailableError(
                 group,
@@ -717,11 +742,7 @@ class AsyncOrca(AsyncAPIClient):
             )
 
     async def _fetch_extension_groups(self) -> frozenset[str]:
-        try:
-            response = await self.get("/apis", cast_to=httpx2.Response)
-        except NotFoundError:
-            log.warning("GET /apis is not served by this deployment; treating it as serving no extension groups")
-            return frozenset()
+        response = await self.get("/apis", cast_to=httpx2.Response)
         return _parse_extension_groups(cast("object", response.json()))
 
     @override

@@ -245,6 +245,17 @@ v1 group. The environment and thread actions send their exact engine requests wi
 an invented core capability check; unsupported backends return their own API error.
 The `user.interrupt` session event remains supported.
 
+Extension discovery is cached per client and base URL. An advertised group/version
+is used regardless of snapshot age. When a requested group or version is missing,
+the SDK refreshes snapshots at least 15 seconds old before raising
+`ExtensionNotAvailableError`; newer missing results do not trigger another probe.
+Concurrent missing calls share one successful refresh. Refresh failures raise the
+underlying error and preserve the previous successful snapshot and its timestamp,
+so other advertised groups remain usable and a later missing call can retry discovery.
+An initial `GET /apis` 404 logs a warning and raises `ExtensionNotAvailableError`
+without caching the failed probe. A refresh 404 raises `NotFoundError` and preserves
+the last successful snapshot, just like other refresh errors.
+
 The portable core contract and deployment overlay continue to govern common core
 APIs; the raw engine artifact does not widen their portability. All 114 engine
 operations are classified in `tests/test_extension_contract.py`, including portable
@@ -278,6 +289,10 @@ if any(g.name == "cloud.sn.io" for g in groups.groups):
 
 Failed requests are retried twice by default, with exponential backoff honouring
 `retry-after`. Connection errors, timeouts, 408, 409, 429, and 5xx are retried.
+`environments.rotate_key()` and `sessions.threads.interrupt()` always disable
+automatic retries, including when the client sets `max_retries`: a late rotation
+can invalidate a returned key, and interrupt can persist its terminal event before
+returning an indexing error, making retries append duplicate events.
 
 ```python
 client = Orca(max_retries=3, timeout=30.0)
