@@ -312,6 +312,9 @@ class Environments(SyncAPIResource):
     ) -> EnvironmentKey:
         """Engine-only: rotate key for an environment.
 
+        This action never retries automatically, even if the client enables retries:
+        a late first attempt can invalidate the key returned by a retry.
+
         Args:
           environment_id: Environment whose key or worker state is requested.
           extra_headers: Send extra headers
@@ -324,9 +327,12 @@ class Environments(SyncAPIResource):
         return self._post(
             path_template("/v1/environments/{environment_id}/rotate-key", environment_id=environment_id),
             body={},
-            options=make_request_options(
-                extra_headers=extra_headers, extra_query=extra_query, extra_body=extra_body, timeout=timeout
-            ),
+            options={
+                "max_retries": 0,
+                **make_request_options(
+                    extra_headers=extra_headers, extra_query=extra_query, extra_body=extra_body, timeout=timeout
+                ),
+            },
             cast_to=EnvironmentKey,
         )
 
@@ -672,6 +678,9 @@ class AsyncEnvironments(AsyncAPIResource):
     ) -> EnvironmentKey:
         """Engine-only: rotate key for an environment.
 
+        This action never retries automatically, even if the client enables retries:
+        a late first attempt can invalidate the key returned by a retry.
+
         Args:
           environment_id: Environment whose key or worker state is requested.
           extra_headers: Send extra headers
@@ -684,9 +693,12 @@ class AsyncEnvironments(AsyncAPIResource):
         return await self._post(
             path_template("/v1/environments/{environment_id}/rotate-key", environment_id=environment_id),
             body={},
-            options=make_request_options(
-                extra_headers=extra_headers, extra_query=extra_query, extra_body=extra_body, timeout=timeout
-            ),
+            options={
+                "max_retries": 0,
+                **make_request_options(
+                    extra_headers=extra_headers, extra_query=extra_query, extra_body=extra_body, timeout=timeout
+                ),
+            },
             cast_to=EnvironmentKey,
         )
 
