@@ -33,12 +33,8 @@ credentials are injected. No pull request, including a same-repository pull requ
 this credential-backed suite. Ordinary PR lint, hermetic unit tests, and package builds
 continue in `ci.yml` without this credential.
 
-This intentionally trades pre-merge full-stack E2E coverage for a clear trust boundary.
-Merge reviewed code before running the private-dependency suite. Do not add a PR label
-bypass or a dispatch input that checks out a PR SHA. Main branch changes and dependencies
-must remain reviewed: the suite still exposes its credential to trusted main code, including
-through the test cluster's image pull secret. Reducing that credential's permissions and
-isolating dependency preparation are separate defense-in-depth improvements.
+Full-stack E2E runs after merge; ordinary PR checks remain available before merge.
+Repository administration and access configuration are managed separately.
 
 ## Configuration
 
