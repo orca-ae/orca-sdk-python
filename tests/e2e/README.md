@@ -26,10 +26,19 @@ Hosted extension APIs remain part of the SDK and are covered by mocked tests in
 
 ## Who can run it
 
-The suite depends on private sources and credentials, so it only runs where the
-repository's secrets are available. That means pushes to `main`, the daily schedule, manual
-runs, and pull requests from branches in this repository. Pull requests from forks and from
-Dependabot skip it.
+The suite uses private sources and a repository credential. It runs only on commits from
+`main`: pushes, the daily schedule, and manual runs targeting `main`. Each run checks out
+its exact event SHA. Manual runs targeting any other branch or tag are skipped before
+credentials are injected. No pull request, including a same-repository pull request, runs
+this credential-backed suite. Ordinary PR lint, hermetic unit tests, and package builds
+continue in `ci.yml` without this credential.
+
+This intentionally trades pre-merge full-stack E2E coverage for a clear trust boundary.
+Merge reviewed code before running the private-dependency suite. Do not add a PR label
+bypass or a dispatch input that checks out a PR SHA. Main branch changes and dependencies
+must remain reviewed: the suite still exposes its credential to trusted main code, including
+through the test cluster's image pull secret. Reducing that credential's permissions and
+isolating dependency preparation are separate defense-in-depth improvements.
 
 ## Configuration
 
