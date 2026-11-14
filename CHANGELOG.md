@@ -3,6 +3,13 @@
 Versions up to 0.2.0 predate this repository's public history, so they have no tags or
 releases here.
 
+## [0.3.1](https://github.com/orca-ae/orca-sdk-python/compare/v0.3.0...v0.3.1) (2026-11-14)
+
+
+### Bug Fixes
+
+* **ci:** restrict credential-backed E2E to trusted main commits ([#6](https://github.com/orca-ae/orca-sdk-python/issues/6)) ([5ae23f2](https://github.com/orca-ae/orca-sdk-python/commit/5ae23f2db43b42bb23973e8328190746c0f40ef3))
+
 ## [0.3.0](https://github.com/orca-ae/orca-sdk-python/compare/v0.2.1...v0.3.0) (2026-09-28)
 
 
