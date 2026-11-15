@@ -9,6 +9,7 @@ import asyncio
 import inspect
 import logging
 import threading
+from time import monotonic
 from typing import TYPE_CHECKING, Any, Union, Mapping, Callable, Awaitable, cast
 from typing_extensions import Self, TypeAlias, override
 
@@ -114,6 +115,14 @@ if TYPE_CHECKING:
         AsyncMemoryStoresWithRawResponse,
         MemoryStoresWithStreamingResponse,
         AsyncMemoryStoresWithStreamingResponse,
+    )
+    from .resources.model_price_rules import (
+        ModelPriceRules,
+        AsyncModelPriceRules,
+        ModelPriceRulesWithRawResponse,
+        AsyncModelPriceRulesWithRawResponse,
+        ModelPriceRulesWithStreamingResponse,
+        AsyncModelPriceRulesWithStreamingResponse,
     )
 from ._types import Omit, Timeout, NotGiven, RequestOptions, not_given
 from ._utils import is_given
@@ -231,6 +240,7 @@ class Orca(SyncAPIClient):
             api_key = os.environ.get("ORCA_API_KEY") or None
         self.api_key = api_key
         self._extension_groups: dict[str, frozenset[str]] = {}
+        self._extension_groups_fetched_at: dict[str, float] = {}
         self._extension_lock = threading.Lock()
 
         super().__init__(
@@ -309,6 +319,12 @@ class Orca(SyncAPIClient):
         from .resources.model_prices import ModelPrices
 
         return ModelPrices(self)
+
+    @cached_property
+    def model_price_rules(self) -> ModelPriceRules:
+        from .resources.model_price_rules import ModelPriceRules
+
+        return ModelPriceRules(self)
 
     @cached_property
     def cloud(self) -> Cloud:
@@ -406,40 +422,50 @@ class Orca(SyncAPIClient):
 
         return SessionHandle(self, session_id)
 
-    def _ensure_extension_available(self, group: str) -> None:
+    def _ensure_extension_available(self, group: str, version: str | None = None) -> None:
         """Raise unless this deployment advertises `group` via `GET /apis`.
 
         Namespaces served by an extension are gated here rather than being allowed
         to fail as a 404, so calling one against a deployment that does not serve it
         produces `ExtensionNotAvailableError` and makes no HTTP request at all.
 
-        The discovery result is cached per base URL, and the lock collapses a burst
-        of concurrent first-calls into a single probe.
+        Positive discovery results stay cached per base URL. A missing group or
+        version refreshes a snapshot at least 15 seconds old; the lock collapses
+        concurrent probes. Failed refreshes preserve the last successful snapshot.
         """
         base = str(self.base_url)
+        required = f"{group}/{version}" if version else group
         groups = self._extension_groups.get(base)
-        if groups is None:
+        if groups is None or required not in groups:
             with self._extension_lock:
                 groups = self._extension_groups.get(base)
-                if groups is None:
-                    groups = self._fetch_extension_groups()
-                    self._extension_groups[base] = groups
+                if groups is None or (
+                    required not in groups and monotonic() - self._extension_groups_fetched_at[base] >= 15
+                ):
+                    try:
+                        groups = self._fetch_extension_groups()
+                    except NotFoundError:
+                        if groups is not None:
+                            raise
+                        # A pre-discovery deployment has no extensions; do not cache the failed probe.
+                        log.warning(
+                            "GET /apis is not served by this deployment; treating it as serving no extension groups"
+                        )
+                        groups = frozenset[str]()
+                    else:
+                        self._extension_groups_fetched_at[base] = monotonic()
+                        self._extension_groups[base] = groups
 
-        if group not in groups:
+        if required not in groups:
             raise ExtensionNotAvailableError(
                 group,
-                f'This deployment does not advertise the "{group}" extension group '
+                f'This deployment does not advertise the "{required}" extension group '
                 f"(GET /apis groups: [{', '.join(sorted(groups))}]). Methods under this "
                 "namespace require a deployment that serves this extension group.",
             )
 
     def _fetch_extension_groups(self) -> frozenset[str]:
-        try:
-            response = self.get("/apis", cast_to=httpx2.Response)
-        except NotFoundError:
-            # A deployment predating the discovery route serves no extensions.
-            log.warning("GET /apis is not served by this deployment; treating it as serving no extension groups")
-            return frozenset()
+        response = self.get("/apis", cast_to=httpx2.Response)
         return _parse_extension_groups(cast("object", response.json()))
 
     @override
@@ -479,6 +505,7 @@ class AsyncOrca(AsyncAPIClient):
             api_key = os.environ.get("ORCA_API_KEY") or None
         self.api_key = api_key
         self._extension_groups: dict[str, frozenset[str]] = {}
+        self._extension_groups_fetched_at: dict[str, float] = {}
         self._extension_lock = None
 
         super().__init__(
@@ -557,6 +584,12 @@ class AsyncOrca(AsyncAPIClient):
         from .resources.model_prices import AsyncModelPrices
 
         return AsyncModelPrices(self)
+
+    @cached_property
+    def model_price_rules(self) -> AsyncModelPriceRules:
+        from .resources.model_price_rules import AsyncModelPriceRules
+
+        return AsyncModelPriceRules(self)
 
     @cached_property
     def cloud(self) -> AsyncCloud:
@@ -668,7 +701,7 @@ class AsyncOrca(AsyncAPIClient):
 
         return AsyncSessionHandle(self, session_id)
 
-    async def _ensure_extension_available(self, group: str) -> None:
+    async def _ensure_extension_available(self, group: str, version: str | None = None) -> None:
         """Async counterpart to `Orca._ensure_extension_available`.
 
         The lock is created lazily because a client may be constructed outside a
@@ -676,30 +709,40 @@ class AsyncOrca(AsyncAPIClient):
         tie it to the wrong loop.
         """
         base = str(self.base_url)
+        required = f"{group}/{version}" if version else group
         groups = self._extension_groups.get(base)
-        if groups is None:
+        if groups is None or required not in groups:
             if self._extension_lock is None:
                 self._extension_lock = asyncio.Lock()
             async with self._extension_lock:
                 groups = self._extension_groups.get(base)
-                if groups is None:
-                    groups = await self._fetch_extension_groups()
-                    self._extension_groups[base] = groups
+                if groups is None or (
+                    required not in groups and monotonic() - self._extension_groups_fetched_at[base] >= 15
+                ):
+                    try:
+                        groups = await self._fetch_extension_groups()
+                    except NotFoundError:
+                        if groups is not None:
+                            raise
+                        # A pre-discovery deployment has no extensions; do not cache the failed probe.
+                        log.warning(
+                            "GET /apis is not served by this deployment; treating it as serving no extension groups"
+                        )
+                        groups = frozenset[str]()
+                    else:
+                        self._extension_groups_fetched_at[base] = monotonic()
+                        self._extension_groups[base] = groups
 
-        if group not in groups:
+        if required not in groups:
             raise ExtensionNotAvailableError(
                 group,
-                f'This deployment does not advertise the "{group}" extension group '
+                f'This deployment does not advertise the "{required}" extension group '
                 f"(GET /apis groups: [{', '.join(sorted(groups))}]). Methods under this "
                 "namespace require a deployment that serves this extension group.",
             )
 
     async def _fetch_extension_groups(self) -> frozenset[str]:
-        try:
-            response = await self.get("/apis", cast_to=httpx2.Response)
-        except NotFoundError:
-            log.warning("GET /apis is not served by this deployment; treating it as serving no extension groups")
-            return frozenset()
+        response = await self.get("/apis", cast_to=httpx2.Response)
         return _parse_extension_groups(cast("object", response.json()))
 
     @override
@@ -714,7 +757,7 @@ class AsyncOrca(AsyncAPIClient):
 
 
 def _parse_extension_groups(payload: object) -> frozenset[str]:
-    """Extract the advertised group names from a `GET /apis` body.
+    """Extract advertised group names and consistent group/version pairs from `GET /apis`.
 
     An empty or unrecognised body yields an empty set: "no extensions installed" is a
     valid deployment state, not an error.
@@ -732,6 +775,15 @@ def _parse_extension_groups(payload: object) -> frozenset[str]:
         name = cast("Mapping[str, object]", entry).get("name")
         if isinstance(name, str) and name:
             names.add(name)
+            versions = cast("Mapping[str, object]", entry).get("versions")
+            if isinstance(versions, list):
+                for item in cast("list[object]", versions):
+                    if not isinstance(item, dict):
+                        continue
+                    version = cast("Mapping[str, object]", item).get("version")
+                    group_version = cast("Mapping[str, object]", item).get("group_version")
+                    if isinstance(version, str) and group_version == f"{name}/{version}":
+                        names.add(f"{name}/{version}")
     return frozenset(names)
 
 
@@ -850,6 +902,12 @@ class OrcaWithRawResponse:
         return ModelPricesWithRawResponse(self._client.model_prices)
 
     @cached_property
+    def model_price_rules(self) -> ModelPriceRulesWithRawResponse:
+        from .resources.model_price_rules import ModelPriceRulesWithRawResponse
+
+        return ModelPriceRulesWithRawResponse(self._client.model_price_rules)
+
+    @cached_property
     def cloud(self) -> CloudWithRawResponse:
         from .resources.cloud import CloudWithRawResponse
 
@@ -927,6 +985,12 @@ class AsyncOrcaWithRawResponse:
         from .resources.model_prices import AsyncModelPricesWithRawResponse
 
         return AsyncModelPricesWithRawResponse(self._client.model_prices)
+
+    @cached_property
+    def model_price_rules(self) -> AsyncModelPriceRulesWithRawResponse:
+        from .resources.model_price_rules import AsyncModelPriceRulesWithRawResponse
+
+        return AsyncModelPriceRulesWithRawResponse(self._client.model_price_rules)
 
     @cached_property
     def cloud(self) -> AsyncCloudWithRawResponse:
@@ -1008,6 +1072,12 @@ class OrcaWithStreamedResponse:
         return ModelPricesWithStreamingResponse(self._client.model_prices)
 
     @cached_property
+    def model_price_rules(self) -> ModelPriceRulesWithStreamingResponse:
+        from .resources.model_price_rules import ModelPriceRulesWithStreamingResponse
+
+        return ModelPriceRulesWithStreamingResponse(self._client.model_price_rules)
+
+    @cached_property
     def cloud(self) -> CloudWithStreamingResponse:
         from .resources.cloud import CloudWithStreamingResponse
 
@@ -1085,6 +1155,12 @@ class AsyncOrcaWithStreamedResponse:
         from .resources.model_prices import AsyncModelPricesWithStreamingResponse
 
         return AsyncModelPricesWithStreamingResponse(self._client.model_prices)
+
+    @cached_property
+    def model_price_rules(self) -> AsyncModelPriceRulesWithStreamingResponse:
+        from .resources.model_price_rules import AsyncModelPriceRulesWithStreamingResponse
+
+        return AsyncModelPriceRulesWithStreamingResponse(self._client.model_price_rules)
 
     @cached_property
     def cloud(self) -> AsyncCloudWithStreamingResponse:

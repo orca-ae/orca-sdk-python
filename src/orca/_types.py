@@ -123,6 +123,7 @@ class RequestOptions(TypedDict, total=False):
     extra_json: AnyMapping
     idempotency_key: str
     follow_redirects: bool
+    allowed_status_codes: tuple[int, ...]
 
 
 # Sentinel class used until PEP 0661 is accepted

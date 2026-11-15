@@ -25,6 +25,12 @@ from .memory import (
     DeletedMemory as DeletedMemory,
     MemoryListItem as MemoryListItem,
 )
+from .harness import (
+    Harness as Harness,
+    HarnessList as HarnessList,
+    HarnessModel as HarnessModel,
+    HarnessCapabilities as HarnessCapabilities,
+)
 from .session import (
     Session as Session,
     SessionAgent as SessionAgent,
@@ -60,6 +66,9 @@ from .guardrail import (
     GuardrailRule as GuardrailRule,
     DeletedGuardrail as DeletedGuardrail,
     GuardrailBuiltinRule as GuardrailBuiltinRule,
+    GuardrailDogwoodRule as GuardrailDogwoodRule,
+    GuardrailMCPManifest as GuardrailMCPManifest,
+    GuardrailUnknownRule as GuardrailUnknownRule,
     GuardrailExpressionRule as GuardrailExpressionRule,
 )
 from .environment import (
@@ -176,6 +185,7 @@ from .trigger_shared import (
     TriggerKafkaSourceUpdateParam as TriggerKafkaSourceUpdateParam,
     TriggerPulsarSourceUpdateParam as TriggerPulsarSourceUpdateParam,
 )
+from .environment_key import EnvironmentKey as EnvironmentKey
 from .cloud_connection import (
     CloudConnection as CloudConnection,
     CloudConnectionSpec as CloudConnectionSpec,
@@ -190,14 +200,30 @@ from .cloud_connection import (
     CloudConnectionStatusCondition as CloudConnectionStatusCondition,
 )
 from .file_list_params import FileListParams as FileListParams
+from .guardrail_bundle import (
+    GuardrailBundle as GuardrailBundle,
+    EffectiveGuardrail as EffectiveGuardrail,
+    GuardrailBundleScope as GuardrailBundleScope,
+)
 from .guardrail_shared import (
+    GuardrailMode as GuardrailMode,
     GuardrailPhase as GuardrailPhase,
     GuardrailScope as GuardrailScope,
     GuardrailVerdict as GuardrailVerdict,
     GuardrailRuleParam as GuardrailRuleParam,
     GuardrailStateScope as GuardrailStateScope,
     GuardrailBuiltinRuleParam as GuardrailBuiltinRuleParam,
+    GuardrailDogwoodRuleParam as GuardrailDogwoodRuleParam,
+    GuardrailMCPManifestParam as GuardrailMCPManifestParam,
     GuardrailExpressionRuleParam as GuardrailExpressionRuleParam,
+)
+from .model_price_rule import (
+    ModelPriceRule as ModelPriceRule,
+    ConditionalModel as ConditionalModel,
+    ModelPriceRuleRates as ModelPriceRuleRates,
+    ModelPriceRuleConditions as ModelPriceRuleConditions,
+    ModelPriceRuleProvenance as ModelPriceRuleProvenance,
+    ModelPriceRuleTokenRange as ModelPriceRuleTokenRange,
 )
 from .session_resource import (
     SessionResource as SessionResource,
@@ -391,6 +417,7 @@ from .cloud_package_metadata import (
     CloudPackageMetadataParam as CloudPackageMetadataParam,
 )
 from .credential_list_params import CredentialListParams as CredentialListParams
+from .environment_work_stats import EnvironmentWorkStats as EnvironmentWorkStats
 from .memory_retrieve_params import MemoryRetrieveParams as MemoryRetrieveParams
 from .cloud_connection_shared import (
     CloudConnectionSpecParam as CloudConnectionSpecParam,
@@ -408,6 +435,10 @@ from .guardrail_update_params import GuardrailUpdateParams as GuardrailUpdatePar
 from .model_price_list_params import ModelPriceListParams as ModelPriceListParams
 from .credential_create_params import CredentialCreateParams as CredentialCreateParams
 from .credential_update_params import CredentialUpdateParams as CredentialUpdateParams
+from .guardrail_dogwood_schema import (
+    GuardrailDogwoodSchema as GuardrailDogwoodSchema,
+    GuardrailDogwoodEventSchemas as GuardrailDogwoodEventSchemas,
+)
 from .memory_store_list_params import MemoryStoreListParams as MemoryStoreListParams
 from .session_file_list_params import SessionFileListParams as SessionFileListParams
 from .agent_version_list_params import AgentVersionListParams as AgentVersionListParams
@@ -432,6 +463,7 @@ from .skill_version_create_params import SkillVersionCreateParams as SkillVersio
 from .trigger_session_list_params import TriggerSessionListParams as TriggerSessionListParams
 from .cloud_function_create_params import CloudFunctionCreateParams as CloudFunctionCreateParams
 from .cloud_function_update_params import CloudFunctionUpdateParams as CloudFunctionUpdateParams
+from .model_price_rule_list_params import ModelPriceRuleListParams as ModelPriceRuleListParams
 from .session_resource_list_params import SessionResourceListParams as SessionResourceListParams
 from .cloud_function_trigger_params import CloudFunctionTriggerParams as CloudFunctionTriggerParams
 from .cloud_connection_create_params import CloudConnectionCreateParams as CloudConnectionCreateParams

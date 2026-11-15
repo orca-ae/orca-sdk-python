@@ -5,8 +5,11 @@ from typing import List, Generic, TypeVar, Optional
 from typing_extensions import override
 
 from ._base_client import BasePage, PageInfo, BaseSyncPage, BaseAsyncPage
+from .types.model_price_rule import ConditionalModel
 
 __all__ = [
+    "SyncModelPriceRulePage",
+    "AsyncModelPriceRulePage",
     "SyncPage",
     "AsyncPage",
     "SyncPageCursor",
@@ -172,3 +175,27 @@ class AsyncBidirectionalPageCursor(BaseAsyncPage[_T], BasePage[_T], Generic[_T])
             return None
 
         return PageInfo(params={"page": next_page})
+
+
+class SyncModelPriceRulePage(SyncPageCursor[_T], Generic[_T]):
+    """SyncModelPriceRulePage retains the catalog lease and capability metadata on each page."""
+
+    catalog_id: str
+    generation: int
+    digest: str
+    published_at: str
+    expires_at: str
+    required_features: List[str]
+    conditional_models: List[ConditionalModel]
+
+
+class AsyncModelPriceRulePage(AsyncPageCursor[_T], Generic[_T]):
+    """AsyncModelPriceRulePage retains the catalog lease and capability metadata on each page."""
+
+    catalog_id: str
+    generation: int
+    digest: str
+    published_at: str
+    expires_at: str
+    required_features: List[str]
+    conditional_models: List[ConditionalModel]

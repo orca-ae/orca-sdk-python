@@ -179,6 +179,47 @@ class Threads(SyncAPIResource):
             cast_to=SessionThread,
         )
 
+    def interrupt(
+        self,
+        session_id: str,
+        thread_id: str,
+        *,
+        extra_headers: Headers | None = None,
+        extra_query: Query | None = None,
+        extra_body: Body | None = None,
+        timeout: float | httpx2.Timeout | None | NotGiven = not_given,
+    ) -> SessionThread:
+        """Interrupt a thread using the engine-only action; user.interrupt events remain supported.
+
+        This action never retries automatically, even if the client enables retries:
+        indexing can fail after the terminal event is persisted, so retrying can append it twice.
+
+        Args:
+          session_id: Session that owns the thread.
+          thread_id: Thread to interrupt.
+          extra_headers: Send extra headers
+          extra_query: Add additional query parameters to the request
+          extra_body: Add additional JSON properties to the request
+          timeout: Override the client-level default timeout for this request, in seconds
+        """
+        if not session_id:
+            raise ValueError(f"Expected a non-empty value for session_id but received {session_id!r}")
+        if not thread_id:
+            raise ValueError(f"Expected a non-empty value for thread_id but received {thread_id!r}")
+        return self._post(
+            path_template(
+                "/v1/sessions/{session_id}/threads/{thread_id}/interrupt", session_id=session_id, thread_id=thread_id
+            ),
+            body={},
+            options={
+                "max_retries": 0,
+                **make_request_options(
+                    extra_headers=extra_headers, extra_query=extra_query, extra_body=extra_body, timeout=timeout
+                ),
+            },
+            cast_to=SessionThread,
+        )
+
 
 class AsyncThreads(AsyncAPIResource):
     @cached_property
@@ -328,6 +369,47 @@ class AsyncThreads(AsyncAPIResource):
             cast_to=SessionThread,
         )
 
+    async def interrupt(
+        self,
+        session_id: str,
+        thread_id: str,
+        *,
+        extra_headers: Headers | None = None,
+        extra_query: Query | None = None,
+        extra_body: Body | None = None,
+        timeout: float | httpx2.Timeout | None | NotGiven = not_given,
+    ) -> SessionThread:
+        """Interrupt a thread using the engine-only action; user.interrupt events remain supported.
+
+        This action never retries automatically, even if the client enables retries:
+        indexing can fail after the terminal event is persisted, so retrying can append it twice.
+
+        Args:
+          session_id: Session that owns the thread.
+          thread_id: Thread to interrupt.
+          extra_headers: Send extra headers
+          extra_query: Add additional query parameters to the request
+          extra_body: Add additional JSON properties to the request
+          timeout: Override the client-level default timeout for this request, in seconds
+        """
+        if not session_id:
+            raise ValueError(f"Expected a non-empty value for session_id but received {session_id!r}")
+        if not thread_id:
+            raise ValueError(f"Expected a non-empty value for thread_id but received {thread_id!r}")
+        return await self._post(
+            path_template(
+                "/v1/sessions/{session_id}/threads/{thread_id}/interrupt", session_id=session_id, thread_id=thread_id
+            ),
+            body={},
+            options={
+                "max_retries": 0,
+                **make_request_options(
+                    extra_headers=extra_headers, extra_query=extra_query, extra_body=extra_body, timeout=timeout
+                ),
+            },
+            cast_to=SessionThread,
+        )
+
 
 class ThreadsWithRawResponse:
     def __init__(self, threads: Threads) -> None:
@@ -336,6 +418,7 @@ class ThreadsWithRawResponse:
         self.retrieve = to_raw_response_wrapper(threads.retrieve)
         self.list = to_raw_response_wrapper(threads.list)
         self.archive = to_raw_response_wrapper(threads.archive)
+        self.interrupt = to_raw_response_wrapper(threads.interrupt)
 
     @cached_property
     def events(self) -> ThreadEventsWithRawResponse:
@@ -349,6 +432,7 @@ class AsyncThreadsWithRawResponse:
         self.retrieve = async_to_raw_response_wrapper(threads.retrieve)
         self.list = async_to_raw_response_wrapper(threads.list)
         self.archive = async_to_raw_response_wrapper(threads.archive)
+        self.interrupt = async_to_raw_response_wrapper(threads.interrupt)
 
     @cached_property
     def events(self) -> AsyncThreadEventsWithRawResponse:
@@ -362,6 +446,7 @@ class ThreadsWithStreamingResponse:
         self.retrieve = to_streamed_response_wrapper(threads.retrieve)
         self.list = to_streamed_response_wrapper(threads.list)
         self.archive = to_streamed_response_wrapper(threads.archive)
+        self.interrupt = to_streamed_response_wrapper(threads.interrupt)
 
     @cached_property
     def events(self) -> ThreadEventsWithStreamingResponse:
@@ -375,6 +460,7 @@ class AsyncThreadsWithStreamingResponse:
         self.retrieve = async_to_streamed_response_wrapper(threads.retrieve)
         self.list = async_to_streamed_response_wrapper(threads.list)
         self.archive = async_to_streamed_response_wrapper(threads.archive)
+        self.interrupt = async_to_streamed_response_wrapper(threads.interrupt)
 
     @cached_property
     def events(self) -> AsyncThreadEventsWithStreamingResponse:

@@ -21,7 +21,9 @@ from .._response import (
 from ..pagination import SyncPageCursor, AsyncPageCursor
 from .._base_client import AsyncPaginator, make_request_options
 from ..types.environment import Environment, EnvironmentScope, DeletedEnvironment
+from ..types.environment_key import EnvironmentKey
 from ..types.environment_shared import EnvironmentConfigParam
+from ..types.environment_work_stats import EnvironmentWorkStats
 
 __all__ = ["Environments", "AsyncEnvironments"]
 
@@ -299,6 +301,98 @@ class Environments(SyncAPIResource):
             cast_to=Environment,
         )
 
+    def rotate_key(
+        self,
+        environment_id: str,
+        *,
+        extra_headers: Headers | None = None,
+        extra_query: Query | None = None,
+        extra_body: Body | None = None,
+        timeout: float | httpx2.Timeout | None | NotGiven = not_given,
+    ) -> EnvironmentKey:
+        """Engine-only: rotate key for an environment.
+
+        This action never retries automatically, even if the client enables retries:
+        a late first attempt can invalidate the key returned by a retry.
+
+        Args:
+          environment_id: Environment whose key or worker state is requested.
+          extra_headers: Send extra headers
+          extra_query: Add additional query parameters to the request
+          extra_body: Add additional JSON properties to the request
+          timeout: Override the client-level default timeout for this request, in seconds
+        """
+        if not environment_id:
+            raise ValueError(f"Expected a non-empty value for environment_id but received {environment_id!r}")
+        return self._post(
+            path_template("/v1/environments/{environment_id}/rotate-key", environment_id=environment_id),
+            body={},
+            options={
+                "max_retries": 0,
+                **make_request_options(
+                    extra_headers=extra_headers, extra_query=extra_query, extra_body=extra_body, timeout=timeout
+                ),
+            },
+            cast_to=EnvironmentKey,
+        )
+
+    def revoke_key(
+        self,
+        environment_id: str,
+        *,
+        extra_headers: Headers | None = None,
+        extra_query: Query | None = None,
+        extra_body: Body | None = None,
+        timeout: float | httpx2.Timeout | None | NotGiven = not_given,
+    ) -> Environment:
+        """Engine-only: revoke key for an environment.
+
+        Args:
+          environment_id: Environment whose key or worker state is requested.
+          extra_headers: Send extra headers
+          extra_query: Add additional query parameters to the request
+          extra_body: Add additional JSON properties to the request
+          timeout: Override the client-level default timeout for this request, in seconds
+        """
+        if not environment_id:
+            raise ValueError(f"Expected a non-empty value for environment_id but received {environment_id!r}")
+        return self._post(
+            path_template("/v1/environments/{environment_id}/revoke-key", environment_id=environment_id),
+            body={},
+            options=make_request_options(
+                extra_headers=extra_headers, extra_query=extra_query, extra_body=extra_body, timeout=timeout
+            ),
+            cast_to=Environment,
+        )
+
+    def work_stats(
+        self,
+        environment_id: str,
+        *,
+        extra_headers: Headers | None = None,
+        extra_query: Query | None = None,
+        extra_body: Body | None = None,
+        timeout: float | httpx2.Timeout | None | NotGiven = not_given,
+    ) -> EnvironmentWorkStats:
+        """Engine-only: work stats for an environment.
+
+        Args:
+          environment_id: Environment whose key or worker state is requested.
+          extra_headers: Send extra headers
+          extra_query: Add additional query parameters to the request
+          extra_body: Add additional JSON properties to the request
+          timeout: Override the client-level default timeout for this request, in seconds
+        """
+        if not environment_id:
+            raise ValueError(f"Expected a non-empty value for environment_id but received {environment_id!r}")
+        return self._get(
+            path_template("/v1/environments/{environment_id}/work_stats", environment_id=environment_id),
+            options=make_request_options(
+                extra_headers=extra_headers, extra_query=extra_query, extra_body=extra_body, timeout=timeout
+            ),
+            cast_to=EnvironmentWorkStats,
+        )
+
 
 class AsyncEnvironments(AsyncAPIResource):
     @cached_property
@@ -573,6 +667,98 @@ class AsyncEnvironments(AsyncAPIResource):
             cast_to=Environment,
         )
 
+    async def rotate_key(
+        self,
+        environment_id: str,
+        *,
+        extra_headers: Headers | None = None,
+        extra_query: Query | None = None,
+        extra_body: Body | None = None,
+        timeout: float | httpx2.Timeout | None | NotGiven = not_given,
+    ) -> EnvironmentKey:
+        """Engine-only: rotate key for an environment.
+
+        This action never retries automatically, even if the client enables retries:
+        a late first attempt can invalidate the key returned by a retry.
+
+        Args:
+          environment_id: Environment whose key or worker state is requested.
+          extra_headers: Send extra headers
+          extra_query: Add additional query parameters to the request
+          extra_body: Add additional JSON properties to the request
+          timeout: Override the client-level default timeout for this request, in seconds
+        """
+        if not environment_id:
+            raise ValueError(f"Expected a non-empty value for environment_id but received {environment_id!r}")
+        return await self._post(
+            path_template("/v1/environments/{environment_id}/rotate-key", environment_id=environment_id),
+            body={},
+            options={
+                "max_retries": 0,
+                **make_request_options(
+                    extra_headers=extra_headers, extra_query=extra_query, extra_body=extra_body, timeout=timeout
+                ),
+            },
+            cast_to=EnvironmentKey,
+        )
+
+    async def revoke_key(
+        self,
+        environment_id: str,
+        *,
+        extra_headers: Headers | None = None,
+        extra_query: Query | None = None,
+        extra_body: Body | None = None,
+        timeout: float | httpx2.Timeout | None | NotGiven = not_given,
+    ) -> Environment:
+        """Engine-only: revoke key for an environment.
+
+        Args:
+          environment_id: Environment whose key or worker state is requested.
+          extra_headers: Send extra headers
+          extra_query: Add additional query parameters to the request
+          extra_body: Add additional JSON properties to the request
+          timeout: Override the client-level default timeout for this request, in seconds
+        """
+        if not environment_id:
+            raise ValueError(f"Expected a non-empty value for environment_id but received {environment_id!r}")
+        return await self._post(
+            path_template("/v1/environments/{environment_id}/revoke-key", environment_id=environment_id),
+            body={},
+            options=make_request_options(
+                extra_headers=extra_headers, extra_query=extra_query, extra_body=extra_body, timeout=timeout
+            ),
+            cast_to=Environment,
+        )
+
+    async def work_stats(
+        self,
+        environment_id: str,
+        *,
+        extra_headers: Headers | None = None,
+        extra_query: Query | None = None,
+        extra_body: Body | None = None,
+        timeout: float | httpx2.Timeout | None | NotGiven = not_given,
+    ) -> EnvironmentWorkStats:
+        """Engine-only: work stats for an environment.
+
+        Args:
+          environment_id: Environment whose key or worker state is requested.
+          extra_headers: Send extra headers
+          extra_query: Add additional query parameters to the request
+          extra_body: Add additional JSON properties to the request
+          timeout: Override the client-level default timeout for this request, in seconds
+        """
+        if not environment_id:
+            raise ValueError(f"Expected a non-empty value for environment_id but received {environment_id!r}")
+        return await self._get(
+            path_template("/v1/environments/{environment_id}/work_stats", environment_id=environment_id),
+            options=make_request_options(
+                extra_headers=extra_headers, extra_query=extra_query, extra_body=extra_body, timeout=timeout
+            ),
+            cast_to=EnvironmentWorkStats,
+        )
+
 
 class EnvironmentsWithRawResponse:
     def __init__(self, environments: Environments) -> None:
@@ -584,6 +770,9 @@ class EnvironmentsWithRawResponse:
         self.list = to_raw_response_wrapper(environments.list)
         self.delete = to_raw_response_wrapper(environments.delete)
         self.archive = to_raw_response_wrapper(environments.archive)
+        self.rotate_key = to_raw_response_wrapper(environments.rotate_key)
+        self.revoke_key = to_raw_response_wrapper(environments.revoke_key)
+        self.work_stats = to_raw_response_wrapper(environments.work_stats)
 
 
 class AsyncEnvironmentsWithRawResponse:
@@ -596,6 +785,9 @@ class AsyncEnvironmentsWithRawResponse:
         self.list = async_to_raw_response_wrapper(environments.list)
         self.delete = async_to_raw_response_wrapper(environments.delete)
         self.archive = async_to_raw_response_wrapper(environments.archive)
+        self.rotate_key = async_to_raw_response_wrapper(environments.rotate_key)
+        self.revoke_key = async_to_raw_response_wrapper(environments.revoke_key)
+        self.work_stats = async_to_raw_response_wrapper(environments.work_stats)
 
 
 class EnvironmentsWithStreamingResponse:
@@ -608,6 +800,9 @@ class EnvironmentsWithStreamingResponse:
         self.list = to_streamed_response_wrapper(environments.list)
         self.delete = to_streamed_response_wrapper(environments.delete)
         self.archive = to_streamed_response_wrapper(environments.archive)
+        self.rotate_key = to_streamed_response_wrapper(environments.rotate_key)
+        self.revoke_key = to_streamed_response_wrapper(environments.revoke_key)
+        self.work_stats = to_streamed_response_wrapper(environments.work_stats)
 
 
 class AsyncEnvironmentsWithStreamingResponse:
@@ -620,3 +815,6 @@ class AsyncEnvironmentsWithStreamingResponse:
         self.list = async_to_streamed_response_wrapper(environments.list)
         self.delete = async_to_streamed_response_wrapper(environments.delete)
         self.archive = async_to_streamed_response_wrapper(environments.archive)
+        self.rotate_key = async_to_streamed_response_wrapper(environments.rotate_key)
+        self.revoke_key = async_to_streamed_response_wrapper(environments.revoke_key)
+        self.work_stats = async_to_streamed_response_wrapper(environments.work_stats)

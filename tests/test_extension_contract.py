@@ -1,7 +1,7 @@
 # Copyright The Orca Authors
 # SPDX-License-Identifier: Apache-2.0
 
-"""Policy and pricing operations remain aligned with the vendored extension contract."""
+"""Every raw engine operation is implemented or explicitly excluded."""
 
 from __future__ import annotations
 
@@ -9,10 +9,22 @@ import re
 from pathlib import Path
 
 from orca import Orca, AsyncOrca
+from tests.test_contract import NOT_EXPOSED as CORE_EXCLUDED, SDK_OPERATIONS as CORE_OPERATIONS
 
-SPEC = Path(__file__).parent.parent / "openapi" / "managed-agents-extensions.yaml"
+SPEC = Path(__file__).parent.parent / "openapi" / "managed-agents-engine.yaml"
 
 SDK_OPERATIONS: dict[str, str] = {
+    **CORE_OPERATIONS,
+    "guardrails.effective": "guardrails.effective",
+    "guardrails.dogwoodSchema": "guardrails.dogwood_schema",
+    "discovery.pricingV2GroupResources": "discovery.pricing_v2_group_resources",
+    "modelPriceRules.list": "model_price_rules.list",
+    "discovery.runtimeGroupResources": "discovery.runtime_group_resources",
+    "discovery.harnesses": "discovery.harnesses",
+    "environments.rotateKey": "environments.rotate_key",
+    "environments.revokeKey": "environments.revoke_key",
+    "environments.workStats": "environments.work_stats",
+    "sessions.interruptThread": "sessions.threads.interrupt",
     "discovery.policyGroupResources": "discovery.policy_group_resources",
     "discovery.pricingGroupResources": "discovery.pricing_group_resources",
     "guardrails.archive": "guardrails.archive",
@@ -30,7 +42,7 @@ SDK_OPERATIONS: dict[str, str] = {
 def _operation_ids() -> set[str]:
     return set(
         re.findall(
-            r"^\s*operationId:\s*((?:guardrails|modelPrices)\.\S+|discovery\.(?:policy|pricing)GroupResources)\s*$",
+            r"^\s*operationId:\s*(\S+)\s*$",
             SPEC.read_text(),
             re.M,
         )
@@ -49,7 +61,14 @@ def test_spec_is_vendored() -> None:
 
 
 def test_every_operation_is_mapped() -> None:
-    assert set(SDK_OPERATIONS) == _operation_ids()
+    excluded = {
+        **dict.fromkeys(CORE_EXCLUDED, "Excluded by the portable surface; see tests/test_contract.py"),
+        "gitProxy.advertise": "Special JWT authentication and binary Git protocol are outside the SDK surface",
+        "gitProxy.uploadPack": "Special JWT authentication and binary Git protocol are outside the SDK surface",
+    }
+    assert not set(SDK_OPERATIONS) & set(excluded)
+    assert len(_operation_ids()) == 114
+    assert set(SDK_OPERATIONS) | set(excluded) == _operation_ids()
 
 
 def test_sync_and_async_mappings_are_callable() -> None:
@@ -60,3 +79,5 @@ def test_sync_and_async_mappings_are_callable() -> None:
     for client in clients:
         for operation_id, dotted in SDK_OPERATIONS.items():
             assert callable(_resolve(client, dotted)), f"{operation_id} -> client.{dotted} is not callable"
+            for wrapper in ("with_raw_response", "with_streaming_response"):
+                assert callable(_resolve(getattr(client, wrapper), dotted)), f"{operation_id}: missing {wrapper}"

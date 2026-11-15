@@ -6,7 +6,7 @@ from __future__ import annotations
 from typing import Dict, List, Optional
 from typing_extensions import Required, TypedDict
 
-from .guardrail_shared import GuardrailPhase, GuardrailScope, GuardrailRuleParam
+from .guardrail_shared import GuardrailMode, GuardrailPhase, GuardrailScope, GuardrailRuleParam
 
 __all__ = ["GuardrailCreateParams"]
 
@@ -17,6 +17,8 @@ class GuardrailCreateParams(TypedDict, total=False):
     rule: Required[GuardrailRuleParam]
 
     description: Optional[str]
+
+    mode: GuardrailMode
 
     enabled: bool
 

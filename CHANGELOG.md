@@ -3,6 +3,13 @@
 Versions up to 0.2.0 predate this repository's public history, so they have no tags or
 releases here.
 
+## Unreleased
+
+### Bug Fixes
+
+* Disable automatic thread interrupt retries even when enabled globally, avoiding duplicate terminal events after indexing or transport failures.
+* Refresh extension discovery snapshots after 15 seconds when a requested group or version is missing, preserving cached positive results and the last successful snapshot on refresh errors.
+
 ## [0.3.0](https://github.com/orca-ae/orca-sdk-python/compare/v0.2.1...v0.3.0) (2026-09-28)
 
 

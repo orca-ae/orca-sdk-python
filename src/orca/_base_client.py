@@ -1063,7 +1063,7 @@ class SyncAPIClient(BaseClient[httpx2.Client, Stream[Any]]):
                 response, prepared = self._attempt_request(
                     model_copy(input_options), stream=stream, retries_taken=retries_taken
                 )
-                if response.is_success:
+                if response.is_success or response.status_code in prepared.allowed_status_codes:
                     return self._process_response(
                         cast_to=cast_to,
                         options=prepared,
@@ -1647,7 +1647,7 @@ class AsyncAPIClient(BaseClient[httpx2.AsyncClient, AsyncStream[Any]]):
                 response, prepared = await self._attempt_request(
                     model_copy(input_options), stream=stream, retries_taken=retries_taken
                 )
-                if response.is_success:
+                if response.is_success or response.status_code in prepared.allowed_status_codes:
                     return await self._process_response(
                         cast_to=cast_to,
                         options=prepared,
